@@ -6260,6 +6260,9 @@
   "settings.display.theme.preferred-light-theme": {
     "defaultMessage": "Preferred light theme"
   },
+  "settings.display.theme.purple": {
+    "defaultMessage": "Purple Drip"
+  },
   "settings.display.theme.retro": {
     "defaultMessage": "Retro"
   },

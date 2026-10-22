@@ -441,6 +441,7 @@ pub enum Theme {
     Light,
     Oled,
     Retro,
+    Purple,
     System,
 }
 
@@ -451,6 +452,7 @@ impl Theme {
             Theme::Light => "light",
             Theme::Oled => "oled",
             Theme::Retro => "retro",
+            Theme::Purple => "purple",
             Theme::System => "system",
         }
     }
@@ -461,6 +463,7 @@ impl Theme {
             "light" => Theme::Light,
             "oled" => Theme::Oled,
             "retro" => Theme::Retro,
+            "purple" => Theme::Purple,
             "system" => Theme::System,
             _ => Theme::Dark,
         }

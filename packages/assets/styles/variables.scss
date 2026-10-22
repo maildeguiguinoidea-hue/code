@@ -433,6 +433,39 @@ html {
 	--color-gradient-button-bg: linear-gradient(180deg, #1b1b20 0%, #25262b 100%);
 }
 
+.purple-mode {
+	@extend .dark-mode;
+	--surface-1: #0d0716;
+	--surface-1-5: #120a1e;
+	--surface-2: #160c25;
+	--surface-2-5: #1b102e;
+	--surface-3: #211337;
+	--surface-4: #2e1b4b;
+	--surface-5: #3d2563;
+
+	--color-text-primary: #ffffff;
+	--color-text-default: #d6c6ee;
+	--color-text-tertiary: #a993c9;
+
+	--color-brand: #b44dff;
+	--color-brand-highlight: rgba(180, 77, 255, 0.25);
+	--color-brand-shadow: rgba(180, 77, 255, 0.7);
+	--color-accent-contrast: #ffffff;
+
+	--color-ad: #1f0f38;
+
+	--brand-gradient-bg: linear-gradient(
+		0deg,
+		rgba(60, 14, 99, 0.25) 0%,
+		rgba(155, 48, 255, 0.12) 100%
+	);
+	--brand-gradient-strong-bg: linear-gradient(270deg, #160a26 10%, #2a1147 100%);
+	--brand-gradient-border: rgba(199, 125, 255, 0.15);
+	--brand-gradient-fade-out-color: linear-gradient(to bottom, rgba(13, 7, 22, 0), #0d0716 80%);
+	--color-gradient-button-bg: linear-gradient(180deg, #2e1b4b 0%, #3d2563 100%);
+	--loading-bar-gradient: linear-gradient(to right, #9b30ff 0%, #ff4fd8 100%);
+}
+
 .retro-mode {
 	@extend .dark-mode;
 	--surface-1: #191917;

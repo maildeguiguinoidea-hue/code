@@ -34,6 +34,10 @@ const themeLabels = defineMessages({
 		id: 'settings.display.theme.oled',
 		defaultMessage: 'OLED',
 	},
+	purple: {
+		id: 'settings.display.theme.purple',
+		defaultMessage: 'Purple Drip',
+	},
 	retro: {
 		id: 'settings.display.theme.retro',
 		defaultMessage: 'Retro',
@@ -126,6 +130,28 @@ function getPreviewClass(option: T): string {
 
 		&.retro-mode {
 			@extend .retro-mode;
+		}
+
+		&.purple-mode {
+			@extend .purple-mode;
+			position: relative;
+			overflow: hidden;
+			background: linear-gradient(160deg, #1a0b2e 0%, #0b0613 100%);
+
+			&::before {
+				content: '';
+				position: absolute;
+				inset: 0 0 auto;
+				height: 1.6rem;
+				background: linear-gradient(#c77dff, #7b1fd1);
+				/* a top band plus round blobs hanging under it = paint drips */
+				mask:
+					linear-gradient(#000 0 55%, transparent 55%),
+					radial-gradient(circle at 12% 70%, #000 0.45rem, transparent 0.5rem),
+					radial-gradient(circle at 38% 65%, #000 0.35rem, transparent 0.4rem),
+					radial-gradient(circle at 70% 75%, #000 0.55rem, transparent 0.6rem),
+					radial-gradient(circle at 90% 62%, #000 0.3rem, transparent 0.35rem);
+			}
 		}
 	}
 

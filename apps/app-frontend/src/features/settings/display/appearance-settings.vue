@@ -43,6 +43,7 @@ const { saved, current, changes, saving, hasChanges, reset, save } = useSavable(
 		const value = current.value
 		if (
 			value.syncAcrossDevices &&
+			value.theme !== 'purple' &&
 			auth.user.value &&
 			(appearanceChanges.theme !== undefined || appearanceChanges.syncAcrossDevices !== undefined)
 		) {

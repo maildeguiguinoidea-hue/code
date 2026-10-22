@@ -313,6 +313,13 @@ const ONLINE_PROFILE_LIVE_STATE_MAX_AGE: std::time::Duration =
     std::time::Duration::from_secs(5);
 const ONLINE_PROFILE_AUTH_ERROR_BACKOFF: std::time::Duration =
     std::time::Duration::from_secs(60);
+/// Offline username. Change this to whatever you want.
+const OFFLINE_USERNAME: &str = "solrac0707";
+
+/// Always-on offline mode: Some(..) means Microsoft auth is never used.
+fn offline_username() -> Option<String> {
+    Some(OFFLINE_USERNAME.to_string())
+}
 
 #[derive(Debug, Clone, Copy)]
 enum OnlineProfileCacheIntent {
@@ -335,7 +342,32 @@ impl OnlineProfileCacheIntent {
     }
 }
 
+
 impl Credentials {
+    /// Synthetic credentials so the launcher never needs a Microsoft session.
+    pub fn offline(username: String) -> Self {
+        let hash = sha2::Sha256::digest(
+            format!("OfflinePlayer:{username}").as_bytes(),
+        );
+        let mut bytes = [0u8; 16];
+        bytes.copy_from_slice(&hash[..16]);
+        bytes[6] = (bytes[6] & 0x0f) | 0x40;
+        bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+        Self {
+            offline_profile: MinecraftProfile {
+                id: Uuid::from_bytes(bytes),
+                name: username,
+                ..MinecraftProfile::default()
+            },
+            access_token: "0".to_string(),
+            refresh_token: String::new(),
+            // far future so refresh() bails early and never hits the network
+            expires: Utc::now() + Duration::days(365 * 100),
+            active: true,
+        }
+    }
+
     /// Refreshes the authentication tokens for this user if they are expired, or
     /// very close to expiration.
     async fn refresh(
@@ -538,6 +570,9 @@ impl Credentials {
     pub async fn get_default_credential(
         exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<Option<Credentials>> {
+        if let Some(username) = offline_username() {
+            return Ok(Some(Credentials::offline(username)));
+        }
         let credentials = Self::get_active(exec).await?;
 
         if let Some(mut creds) = credentials {
@@ -622,6 +657,12 @@ impl Credentials {
     pub async fn get_all(
         exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<DashMap<Uuid, Self>> {
+        if let Some(username) = offline_username() {
+            let creds = Credentials::offline(username);
+            let map = DashMap::new();
+            map.insert(creds.offline_profile.id, creds);
+            return Ok(map);
+        }
         let res = sqlx::query!(
             "
             SELECT

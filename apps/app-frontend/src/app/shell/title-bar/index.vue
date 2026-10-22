@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ChevronLeftIcon, ChevronRightIcon, RightArrowIcon } from '@modrinth/assets'
 import { defineMessages, IconButton, TextLogo, useVIntl } from '@modrinth/ui'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppActionBar from './action-bar.vue'
 import Breadcrumbs from './breadcrumbs.vue'
+import LogoEasterEgg from './logo-easter-egg.vue'
 import WindowControls from './window-controls.vue'
 
 defineProps<{
@@ -19,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const easterEgg = ref<InstanceType<typeof LogoEasterEgg> | null>(null)
 const { formatMessage } = useVIntl()
 const messages = defineMessages({
 	goBack: { id: 'app.navigation.go-back', defaultMessage: 'Go back' },
@@ -33,7 +36,10 @@ const messages = defineMessages({
 		class="app-title-bar relative z-[2] flex bg-bg-raised pl-1 [grid-area:status] [.mac-traffic-lights_&]:pl-20"
 	>
 		<div data-tauri-drag-region class="flex min-w-0 flex-1 items-center overflow-hidden p-2">
-			<TextLogo class="h-7 w-auto shrink-0 text-contrast pointer-events-none" />
+			<div class="shrink-0 cursor-pointer select-none" @dblclick.stop="easterEgg?.start()">
+				<TextLogo class="h-7 w-auto text-contrast pointer-events-none" />
+			</div>
+			<LogoEasterEgg ref="easterEgg" />
 			<div data-tauri-drag-region class="ml-2 flex shrink-0 items-center gap-2">
 				<IconButton
 					type="outlined"

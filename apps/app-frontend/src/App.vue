@@ -77,6 +77,7 @@ import ModrinthAccountRequiredModal from '@/components/ui/modal/ModrinthAccountR
 import UpdateToPlayModal from '@/components/ui/modal/UpdateToPlayModal.vue'
 import NavButton from '@/components/ui/NavButton.vue'
 import QuickInstanceSwitcher from '@/components/ui/QuickInstanceSwitcher.vue'
+import PurpleDrip from '@/components/ui/PurpleDrip.vue'
 import SharedInstanceInviteHandler from '@/components/ui/shared-instances/shared-instance-invite-handler/index.vue'
 import SplashScreen from '@/components/ui/SplashScreen.vue'
 import SurveyPopup from '@/components/ui/SurveyPopup.vue'
@@ -305,10 +306,9 @@ const hasPlus = computed(
 		(hasMidasBadge(credentials.value.user) ||
 			hasActivePride26Midas(authenticatedModrinthUser.value?.campaigns?.pride_26)),
 )
-const showAd = computed(
-	() => sidebarVisible.value && !hasPlus.value && credentials.value !== undefined,
-)
-const adConsentAvailable = computed(() => credentials.value !== undefined && !hasPlus.value)
+// Ads disabled in this build
+const showAd = computed(() => false)
+const adConsentAvailable = computed(() => false)
 providePageContext({
 	hierarchicalSidebarAvailable: ref(true),
 	showAds: showAd,
@@ -617,7 +617,7 @@ const messages = defineMessages({
 })
 
 function handleAdsConsentRequired(required) {
-	if (!required) {
+	if (!required || !adConsentAvailable.value) {
 		if (adsConsentPopupId !== null) {
 			popupNotificationManager.removeNotification(adsConsentPopupId)
 			adsConsentPopupId = null
@@ -2220,6 +2220,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 		/>
 	</div>
 	<I18nDebugPanel />
+	<PurpleDrip />
 	<NotificationPanel :has-sidebar="sidebarVisible" />
 	<PopupNotificationPanel :has-sidebar="sidebarVisible" />
 	<ErrorModal ref="errorModal" />
