@@ -28,7 +28,8 @@ export interface UpgradeActions {
 export function errorText(e: unknown): string {
 	if (e instanceof Error) return e.message
 	if (typeof e === 'string') return e
-	if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message)
+	if (e && typeof e === 'object' && 'message' in e)
+		return String((e as { message: unknown }).message)
 	return JSON.stringify(e)
 }
 
@@ -39,7 +40,10 @@ export interface UpgradeResult {
 }
 
 /** Loader version picked the same way the instance settings do: the newest one (stable if possible) */
-export function pickLoaderVersion(manifest: LoaderManifest, gameVersion: string): string | undefined {
+export function pickLoaderVersion(
+	manifest: LoaderManifest,
+	gameVersion: string,
+): string | undefined {
 	const entry = manifest.gameVersions.find((v) => v.id === gameVersion)
 	let loaders: LoaderVersion[]
 	if (entry?.versionGroup) {
@@ -71,7 +75,10 @@ export async function applyUpgrade(
 	let loaderVersion: string | undefined
 	if (report.loader !== 'vanilla') {
 		onProgress(`Finding a ${report.loader} version for ${report.gameVersion}…`)
-		loaderVersion = pickLoaderVersion(await actions.loaderManifest(report.loader), report.gameVersion)
+		loaderVersion = pickLoaderVersion(
+			await actions.loaderManifest(report.loader),
+			report.gameVersion,
+		)
 		// Nothing has been touched yet, so it's safe to stop here
 		if (!loaderVersion) {
 			throw new Error(`${report.loader} isn't available for Minecraft ${report.gameVersion} yet.`)

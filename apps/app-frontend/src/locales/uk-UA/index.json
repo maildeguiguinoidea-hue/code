@@ -4406,9 +4406,6 @@
   "instance.worlds.world_in_use": {
     "message": "Світ наразі використовується"
   },
-  "minecraft-account.add-account": {
-    "message": "Додати обліковий запис"
-  },
   "minecraft-account.label": {
     "message": "Обліковий запис Minecraft"
   },

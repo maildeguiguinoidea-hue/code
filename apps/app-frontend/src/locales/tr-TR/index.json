@@ -3695,9 +3695,6 @@
   "instance.worlds.world_in_use": {
     "message": "Dünya şu anda kullanımda"
   },
-  "minecraft-account.add-account": {
-    "message": "Hesap ekle"
-  },
   "minecraft-account.label": {
     "message": "Minecraft hesabı"
   },

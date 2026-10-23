@@ -159,7 +159,13 @@ defineExpose({ start })
 	width: min(100vw, 1100px);
 	aspect-ratio: 1;
 	border-radius: 50%;
-	background: radial-gradient(circle, #fff 0%, #c8ffd8 30%, rgba(80, 255, 140, 0.4) 50%, transparent 70%);
+	background: radial-gradient(
+		circle,
+		#fff 0%,
+		#c8ffd8 30%,
+		rgba(80, 255, 140, 0.4) 50%,
+		transparent 70%
+	);
 	pointer-events: none;
 	transform: translate(-50%, -50%) scale(0.2);
 	animation: egg-flash 0.7s ease-out forwards;

@@ -713,9 +713,6 @@
   "instance.worlds.world_in_use": {
     "message": "โลกนี้กำลังถูกใช้งานอยู่"
   },
-  "minecraft-account.add-account": {
-    "message": "เพิ่มบัญชี"
-  },
   "minecraft-account.label": {
     "message": "บัญชี Minecraft"
   },

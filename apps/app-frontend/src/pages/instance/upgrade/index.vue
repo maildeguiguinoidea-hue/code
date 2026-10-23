@@ -3,14 +3,12 @@
 		<section class="card">
 			<h2 class="m-0 text-xl font-extrabold text-contrast">Upgrade check</h2>
 			<p class="m-0 mt-1 text-secondary">
-				Checks every mod in this instance against a newer Minecraft version, so you know what
-				breaks before you change anything. Nothing changes until you press Upgrade.
+				Checks every mod in this instance against a newer Minecraft version, so you know what breaks
+				before you change anything. Nothing changes until you press Upgrade.
 			</p>
 
 			<div class="mt-4 flex flex-wrap items-center gap-2">
-				<span class="text-secondary">
-					{{ instance.game_version }} · {{ loaderLabel }} →
-				</span>
+				<span class="text-secondary"> {{ instance.game_version }} · {{ loaderLabel }} → </span>
 				<Combobox
 					v-model="target"
 					class="w-max"
@@ -40,7 +38,11 @@
 			</p>
 		</section>
 
-		<section v-if="upgradeResult && !busy" class="card verdict" :class="upgradeResult.failed.length ? 'bad' : 'good'">
+		<section
+			v-if="upgradeResult && !busy"
+			class="card verdict"
+			:class="upgradeResult.failed.length ? 'bad' : 'good'"
+		>
 			<CheckCircleIcon v-if="!upgradeResult.failed.length" class="size-6 shrink-0" />
 			<CircleAlertIcon v-else class="size-6 shrink-0" />
 			<div>
@@ -52,7 +54,8 @@
 					</template>
 				</div>
 				<div v-for="fail in upgradeResult.failed" :key="fail.name" class="text-secondary">
-					Couldn't change <b>{{ fail.name }}</b>: {{ fail.error }}
+					Couldn't change <b>{{ fail.name }}</b
+					>: {{ fail.error }}
 				</div>
 			</div>
 		</section>
@@ -80,14 +83,19 @@
 					<b v-if="report.canUpgrade">Looks good for {{ report.gameVersion }}!</b>
 					<b v-else>
 						{{ report.blocking.length + report.conflicts.length }}
-						{{ report.blocking.length + report.conflicts.length === 1 ? 'thing blocks' : 'things block' }}
+						{{
+							report.blocking.length + report.conflicts.length === 1
+								? 'thing blocks'
+								: 'things block'
+						}}
 						{{ report.gameVersion }}
 					</b>
 					<div class="text-secondary">
 						{{ report.ready.length }} ready
 						<template v-if="report.beta.length"> · {{ report.beta.length }} only in beta</template>
 						<template v-if="report.blocking.length">
-							· {{ report.blocking.length }} {{ report.blocking.length === 1 ? 'mod' : 'mods' }} not updated
+							· {{ report.blocking.length }} {{ report.blocking.length === 1 ? 'mod' : 'mods' }} not
+							updated
 						</template>
 						<template v-if="report.optionalMissing.length">
 							· {{ report.optionalMissing.length }}
@@ -96,13 +104,19 @@
 						<template v-if="report.unknown.length">
 							· {{ report.unknown.length }} not from Modrinth
 						</template>
-						<template v-if="report.disabledCount"> · {{ report.disabledCount }} disabled, skipped</template>
+						<template v-if="report.disabledCount">
+							· {{ report.disabledCount }} disabled, skipped</template
+						>
 					</div>
 				</div>
 			</section>
 
 			<section v-if="!confirming" class="card flex flex-wrap items-center gap-3">
-				<Button type="colored" :color="report.canUpgrade ? 'brand' : 'red'" @click="confirming = true">
+				<Button
+					type="colored"
+					:color="report.canUpgrade ? 'brand' : 'red'"
+					@click="confirming = true"
+				>
 					<ArrowBigUpDashIcon class="size-5" />
 					Upgrade to {{ report.gameVersion }}
 				</Button>
@@ -117,18 +131,19 @@
 			</section>
 
 			<section v-else class="card confirm">
-				<h3 class="group-title text-orange">
-					<TriangleAlertIcon class="size-5" /> Are you sure?
-				</h3>
+				<h3 class="group-title text-orange"><TriangleAlertIcon class="size-5" /> Are you sure?</h3>
 				<p class="m-0">
-					This switches <b>{{ instance.name }}</b> from
-					<b>{{ instance.game_version }}</b> to <b>{{ report.gameVersion }}</b> and updates
-					{{ updateCount }} {{ updateCount === 1 ? 'file' : 'files' }} to their
-					{{ report.gameVersion }} versions.
+					This switches <b>{{ instance.name }}</b> from <b>{{ instance.game_version }}</b> to
+					<b>{{ report.gameVersion }}</b> and updates {{ updateCount }}
+					{{ updateCount === 1 ? 'file' : 'files' }} to their {{ report.gameVersion }} versions.
 				</p>
 				<template v-if="report.blocking.length">
 					<p class="m-0 mt-2">
-						{{ report.blocking.length === 1 ? 'This mod gets' : `These ${report.blocking.length} mods get` }}
+						{{
+							report.blocking.length === 1
+								? 'This mod gets'
+								: `These ${report.blocking.length} mods get`
+						}}
 						<b class="text-red">deleted</b>:
 					</p>
 					<ul class="m-0 mt-1">
@@ -145,12 +160,15 @@
 					It also gets unlinked from the modpack it came from, so all its files show up under
 					Additional content.
 				</p>
-				<p v-if="report.optionalMissing.length || report.unknown.length" class="m-0 mt-2 text-secondary">
+				<p
+					v-if="report.optionalMissing.length || report.unknown.length"
+					class="m-0 mt-2 text-secondary"
+				>
 					Packs that aren't updated and files not from Modrinth are kept as they are.
 				</p>
 				<p class="m-0 mt-2 text-secondary">
-					Worlds opened in a newer version can't go back, back them up first if you care about
-					them. This can't be undone.
+					Worlds opened in a newer version can't go back, back them up first if you care about them.
+					This can't be undone.
 				</p>
 				<div class="mt-3 flex flex-wrap gap-2">
 					<Button type="outlined" @click="confirming = false">Cancel</Button>
@@ -169,19 +187,22 @@
 					<XIcon class="size-5" /> Not updated for {{ report.gameVersion }} yet
 				</h3>
 				<p class="m-0 mb-2 text-secondary">
-					The game won't start with these. Wait for an update, or remove them (check that no
-					other mod needs them first).
+					The game won't start with these. Wait for an update, or remove them (check that no other
+					mod needs them first).
 				</p>
-				<ItemRow v-for="item in report.blocking" :key="item.file.path" :item="item" @open="openProject">
+				<ItemRow
+					v-for="item in report.blocking"
+					:key="item.file.path"
+					:item="item"
+					@open="openProject"
+				>
 					<template v-if="item.latestSupported">supports up to {{ item.latestSupported }}</template>
 					<template v-else>no release found</template>
 				</ItemRow>
 			</section>
 
 			<section v-if="report.conflicts.length" class="card">
-				<h3 class="group-title text-red">
-					<CircleSlashIcon class="size-5" /> Conflicts
-				</h3>
+				<h3 class="group-title text-red"><CircleSlashIcon class="size-5" /> Conflicts</h3>
 				<p class="m-0 mb-2 text-secondary">
 					The new version of one mod says it doesn't work together with another one you have.
 				</p>
@@ -207,8 +228,8 @@
 					<TriangleAlertIcon class="size-5" /> Packs not marked for {{ report.gameVersion }}
 				</h3>
 				<p class="m-0 mb-2 text-secondary">
-					Resource packs, shaders and datapacks won't crash the game. Many old ones still work,
-					they just might look off.
+					Resource packs, shaders and datapacks won't crash the game. Many old ones still work, they
+					just might look off.
 				</p>
 				<ItemRow
 					v-for="item in report.optionalMissing"
@@ -221,9 +242,7 @@
 			</section>
 
 			<section v-if="report.unknown.length" class="card">
-				<h3 class="group-title text-secondary">
-					<InfoIcon class="size-5" /> Can't check these
-				</h3>
+				<h3 class="group-title text-secondary"><InfoIcon class="size-5" /> Can't check these</h3>
 				<p class="m-0 mb-2 text-secondary">
 					These files aren't from Modrinth (CurseForge, a website, or edited), so check them
 					yourself.
@@ -244,12 +263,16 @@
 					<span class="text-secondary">{{ showReady ? 'hide' : 'show' }}</span>
 				</button>
 				<template v-if="showReady">
-					<ItemRow v-for="item in report.ready" :key="item.file.path" :item="item" @open="openProject">
+					<ItemRow
+						v-for="item in report.ready"
+						:key="item.file.path"
+						:item="item"
+						@open="openProject"
+					>
 						{{ item.target?.version_number }}
 					</ItemRow>
 				</template>
 			</section>
-
 		</template>
 	</div>
 </template>
@@ -271,7 +294,12 @@ import { computed, markRaw, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { install_existing_instance } from '@/helpers/install'
-import { edit, get_projects, remove_project, switch_project_version_with_dependencies } from '@/helpers/instance'
+import {
+	edit,
+	get_projects,
+	remove_project,
+	switch_project_version_with_dependencies,
+} from '@/helpers/instance'
 import { get_loader_versions } from '@/helpers/metadata'
 import { get_game_versions } from '@/helpers/tags.js'
 

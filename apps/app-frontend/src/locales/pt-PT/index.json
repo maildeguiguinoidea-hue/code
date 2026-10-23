@@ -1781,9 +1781,6 @@
   "instance.worlds.world_in_use": {
     "message": "Mundo está em uso"
   },
-  "minecraft-account.add-account": {
-    "message": "Adicionar conta"
-  },
   "modal.modrinth-account-required.browser-description": {
     "message": "Uma nova aba abriu para iniciar sessão. Completa o início de sessão lá, depois volta para a app."
   },

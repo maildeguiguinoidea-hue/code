@@ -4391,9 +4391,6 @@
   "instance.worlds.world_in_use": {
     "message": "Мир используется"
   },
-  "minecraft-account.add-account": {
-    "message": "Добавить аккаунт"
-  },
   "minecraft-account.label": {
     "message": "Аккаунт Minecraft"
   },

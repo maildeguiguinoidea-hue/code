@@ -4403,9 +4403,6 @@
   "instance.worlds.world_in_use": {
     "message": "Świat jest w użytku"
   },
-  "minecraft-account.add-account": {
-    "message": "Dodaj konto"
-  },
   "minecraft-account.label": {
     "message": "Konto Minecraft"
   },

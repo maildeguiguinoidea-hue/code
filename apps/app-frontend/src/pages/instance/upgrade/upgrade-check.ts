@@ -135,7 +135,9 @@ export const modrinthUpgradeApi: UpgradeApi = {
 	async projects(ids) {
 		const result: ModrinthProject[] = []
 		for (const part of chunk(ids, 100)) {
-			const response = await fetch(`${API_URL}projects?ids=${encodeURIComponent(JSON.stringify(part))}`)
+			const response = await fetch(
+				`${API_URL}projects?ids=${encodeURIComponent(JSON.stringify(part))}`,
+			)
 			if (!response.ok) throw new Error(`Modrinth API projects failed (${response.status})`)
 			result.push(...((await response.json()) as ModrinthProject[]))
 		}
@@ -177,7 +179,10 @@ export async function prepareCheck(
 	}
 }
 
-function newestRelease(project: ModrinthProject | undefined, releaseOrder: string[]): string | undefined {
+function newestRelease(
+	project: ModrinthProject | undefined,
+	releaseOrder: string[],
+): string | undefined {
 	if (!project) return undefined
 	const supported = new Set(project.game_versions)
 	return releaseOrder.find((version) => supported.has(version))
@@ -222,7 +227,11 @@ export async function checkTarget(
 		) {
 			target = undefined
 		}
-		const status: ItemStatus = !target ? 'missing' : target.version_type === 'release' ? 'ready' : 'beta'
+		const status: ItemStatus = !target
+			? 'missing'
+			: target.version_type === 'release'
+				? 'ready'
+				: 'beta'
 		return {
 			file,
 			project,
@@ -230,7 +239,8 @@ export async function checkTarget(
 			target,
 			status,
 			blocking: status === 'missing' && file.projectType === 'mod',
-			latestSupported: status === 'missing' ? newestRelease(project, prepared.releaseOrder) : undefined,
+			latestSupported:
+				status === 'missing' ? newestRelease(project, prepared.releaseOrder) : undefined,
 		}
 	})
 
