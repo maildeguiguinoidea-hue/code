@@ -54,6 +54,25 @@ pub async fn finish_login(
     Ok(credentials)
 }
 
+/// Create a local guest account and select it
+#[tracing::instrument]
+pub async fn create_guest_account(
+    username: &str,
+) -> crate::Result<Credentials> {
+    let state = State::get().await?;
+    crate::state::create_guest_account(username, &state.pool).await
+}
+
+/// Rename a local guest account
+#[tracing::instrument]
+pub async fn rename_guest_account(
+    uuid: uuid::Uuid,
+    new_name: &str,
+) -> crate::Result<()> {
+    let state = State::get().await?;
+    crate::state::rename_guest_account(uuid, new_name, &state.pool).await
+}
+
 #[tracing::instrument]
 pub async fn get_default_user() -> crate::Result<Option<uuid::Uuid>> {
     let state = State::get().await?;

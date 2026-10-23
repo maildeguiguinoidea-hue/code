@@ -54,6 +54,7 @@ indicatif = { workspace = true, optional = true }
 infer = { workspace = true }
 itertools = { workspace = true }
 json5 = { workspace = true }
+md5 = { workspace = true }
 modrinth-content-management = { workspace = true }
 notify = { workspace = true }
 notify-debouncer-mini = { workspace = true }

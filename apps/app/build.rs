@@ -19,6 +19,8 @@ fn main() {
                         "set_default_user",
                         "get_users",
                         "get_launch_auth_status",
+                        "create_local_guest_account",
+                        "rename_local_account",
                     ])
                     .default_permission(
                         DefaultPermissionRule::AllowAllCommands,

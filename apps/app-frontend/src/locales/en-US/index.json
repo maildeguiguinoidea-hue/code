@@ -4544,8 +4544,35 @@
   "instance.worlds.world_in_use": {
     "message": "World is in use"
   },
-  "minecraft-account.add-account": {
-    "message": "Add account"
+  "minecraft-account.account-options": {
+    "message": "Account Options"
+  },
+  "minecraft-account.cancel": {
+    "message": "Cancel"
+  },
+  "minecraft-account.create-account": {
+    "message": "Create account"
+  },
+  "minecraft-account.create-guest": {
+    "message": "Create guest"
+  },
+  "minecraft-account.create-local-guest": {
+    "message": "Create Account (Local Guest)"
+  },
+  "minecraft-account.create-online": {
+    "message": "Create Account (Online)"
+  },
+  "minecraft-account.guest-name": {
+    "message": "Guest name"
+  },
+  "minecraft-account.guest-name-placeholder": {
+    "message": "Nickname"
+  },
+  "minecraft-account.guest-requires-microsoft": {
+    "message": "Sign in with a Microsoft account first to create local guest accounts."
+  },
+  "minecraft-account.invalid-guest-name": {
+    "message": "Use 1 to 16 letters, digits or underscores."
   },
   "minecraft-account.label": {
     "message": "Minecraft account"
@@ -4556,11 +4583,26 @@
   "minecraft-account.remove-account": {
     "message": "Remove account"
   },
+  "minecraft-account.rename-account": {
+    "message": "Rename account"
+  },
+  "minecraft-account.save": {
+    "message": "Save"
+  },
   "minecraft-account.select-account": {
     "message": "Select account"
   },
   "minecraft-account.sign-in": {
     "message": "Sign in to Minecraft"
+  },
+  "minecraft-account.sign-in-with-microsoft": {
+    "message": "Sign in with Microsoft"
+  },
+  "minecraft-account.type.local-guest": {
+    "message": "Local guest"
+  },
+  "minecraft-account.type.microsoft": {
+    "message": "Microsoft account"
   },
   "minecraft-required.description": {
     "message": "You need a Microsoft account that owns Minecraft before you can launch and play."

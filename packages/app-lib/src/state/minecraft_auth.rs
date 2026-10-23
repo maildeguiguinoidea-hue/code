@@ -253,6 +253,7 @@ pub async fn login_finish(
 
     let mut credentials = Credentials {
         offline_profile: MinecraftProfile::default(),
+        account_type: AccountType::Microsoft,
         access_token: minecraft_token.access_token,
         refresh_token: oauth_token.value.refresh_token,
         expires: oauth_token.date
@@ -280,6 +281,152 @@ pub async fn login_finish(
     Ok(credentials)
 }
 
+/// Creates a local guest account and makes it the active account.
+///
+/// Guest accounts never contact any authentication server and launch in offline
+/// mode. They can only be created while a Microsoft account is stored, and their
+/// player UUID is derived from the name with the same scheme as the vanilla
+/// server's offline mode, so local worlds see a consistent player.
+#[tracing::instrument]
+pub async fn create_guest_account(
+    username: &str,
+    exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
+) -> crate::Result<Credentials> {
+    validate_guest_username(username)?;
+
+    if !Credentials::has_microsoft_account(exec).await? {
+        return Err(ErrorKind::InputError(
+            "a signed-in Microsoft account is required to create guest accounts"
+                .to_string(),
+        )
+        .into());
+    }
+
+    let uuid = offline_player_uuid(username);
+    let uuid_string = uuid.as_hyphenated().to_string();
+    let existing = sqlx::query_scalar!(
+        "SELECT uuid FROM minecraft_users WHERE uuid = $1",
+        uuid_string,
+    )
+    .fetch_optional(exec)
+    .await?;
+    if existing.is_some() {
+        return Err(ErrorKind::InputError(format!(
+            "an account for player {username} already exists"
+        ))
+        .into());
+    }
+
+    let credentials = Credentials {
+        offline_profile: MinecraftProfile {
+            id: uuid,
+            name: username.to_string(),
+            ..MinecraftProfile::default()
+        },
+        account_type: AccountType::Guest,
+        // Never sent anywhere; it only needs to be a non-empty value that log
+        // censoring can match without mangling unrelated text
+        access_token: Uuid::new_v4().simple().to_string(),
+        refresh_token: String::new(),
+        expires: Utc::now(),
+        active: true,
+    };
+    credentials.upsert(exec).await?;
+
+    Ok(credentials)
+}
+
+/// Changes the display name of a local guest account. The player UUID is kept,
+/// so the guest keeps its player data in existing worlds.
+#[tracing::instrument]
+pub async fn rename_guest_account(
+    uuid: Uuid,
+    new_name: &str,
+    exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
+) -> crate::Result<()> {
+    validate_guest_username(new_name)?;
+
+    let uuid = uuid.as_hyphenated().to_string();
+    let user_type = AccountType::Guest.as_db_str();
+    let result = sqlx::query!(
+        "
+        UPDATE minecraft_users
+        SET username = $1
+        WHERE uuid = $2 AND user_type = $3
+        ",
+        new_name,
+        uuid,
+        user_type,
+    )
+    .execute(exec)
+    .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(ErrorKind::InputError(format!(
+            "no guest account with ID {uuid}"
+        ))
+        .into());
+    }
+
+    Ok(())
+}
+
+fn validate_guest_username(username: &str) -> crate::Result<()> {
+    let valid = (1..=16).contains(&username.len())
+        && username
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_');
+
+    if valid {
+        Ok(())
+    } else {
+        Err(ErrorKind::InputError(
+            "guest names must be 1 to 16 letters, digits or underscores"
+                .to_string(),
+        )
+        .into())
+    }
+}
+
+/// The UUID the vanilla server assigns to `username` in offline mode, matching
+/// Java's `UUID.nameUUIDFromBytes("OfflinePlayer:" + username)`.
+fn offline_player_uuid(username: &str) -> Uuid {
+    let digest = md5::compute(format!("OfflinePlayer:{username}"));
+    uuid::Builder::from_md5_bytes(digest.0).into_uuid()
+}
+
+/// How a stored account authenticates.
+#[derive(
+    Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Default,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum AccountType {
+    /// A Microsoft account, signed in through Xbox Live.
+    #[default]
+    Microsoft,
+    /// A local guest profile without credentials, launched in offline mode.
+    /// Only usable while a Microsoft account is also stored.
+    Guest,
+}
+
+impl AccountType {
+    /// The value stored in the database, which is also the `${user_type}`
+    /// passed to the game.
+    pub fn as_db_str(self) -> &'static str {
+        match self {
+            Self::Microsoft => "msa",
+            Self::Guest => "legacy",
+        }
+    }
+
+    fn from_db_str(value: &str) -> Self {
+        match value {
+            "legacy" => Self::Guest,
+            _ => Self::Microsoft,
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct Credentials {
     /// The offline profile of the user these credentials are for.
@@ -289,6 +436,8 @@ pub struct Credentials {
     /// such as skins or capes is available.
     #[serde(rename = "profile")]
     pub offline_profile: MinecraftProfile,
+    #[serde(default)]
+    pub account_type: AccountType,
     pub access_token: String,
     pub refresh_token: String,
     pub expires: DateTime<Utc>,
@@ -346,6 +495,8 @@ pub enum LaunchAuthStatus {
         uuid: Uuid,
         since: DateTime<Utc>,
     },
+    /// A local guest account, launched in offline mode.
+    Guest { username: String, uuid: Uuid },
 }
 
 static LAUNCH_AUTH_STATUS: std::sync::RwLock<LaunchAuthStatus> =
@@ -359,7 +510,10 @@ pub fn launch_auth_status() -> LaunchAuthStatus {
 }
 
 pub fn is_launching_offline() -> bool {
-    matches!(launch_auth_status(), LaunchAuthStatus::OfflineCached { .. })
+    matches!(
+        launch_auth_status(),
+        LaunchAuthStatus::OfflineCached { .. } | LaunchAuthStatus::Guest { .. }
+    )
 }
 
 fn set_launch_auth_status(status: LaunchAuthStatus) {
@@ -433,6 +587,10 @@ impl Credentials {
         &mut self,
         exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<()> {
+        if self.account_type == AccountType::Guest {
+            return Ok(());
+        }
+
         // Use a margin of 5 minutes to give e.g. Minecraft and potentially
         // other operations that depend on a fresh token 5 minutes to complete
         // from now, and deal with some classes of clock skew
@@ -513,6 +671,10 @@ impl Credentials {
         &self,
         cache_intent: OnlineProfileCacheIntent,
     ) -> Option<Arc<MinecraftProfile>> {
+        if self.account_type == AccountType::Guest {
+            return None;
+        }
+
         let max_age = cache_intent.max_age();
         let stale_profile = {
             let mut profile_cache = PROFILE_CACHE.lock().await;
@@ -636,6 +798,22 @@ impl Credentials {
             return Ok(None);
         };
 
+        if creds.account_type == AccountType::Guest {
+            if !Self::has_microsoft_account(exec).await? {
+                return Err(ErrorKind::InputError(
+                    "guest accounts can only be used while a Microsoft account is signed in"
+                        .to_string(),
+                )
+                .into());
+            }
+
+            set_launch_auth_status(LaunchAuthStatus::Guest {
+                username: creds.offline_profile.name.clone(),
+                uuid: creds.offline_profile.id,
+            });
+            return Ok(Some(creds));
+        }
+
         let res = match tokio::time::timeout(
             LAUNCH_REFRESH_DEADLINE,
             creds.refresh(exec),
@@ -704,7 +882,7 @@ impl Credentials {
         let res = sqlx::query!(
             "
             SELECT
-                uuid, active, username, access_token, refresh_token, expires
+                uuid, active, username, user_type, access_token, refresh_token, expires
             FROM minecraft_users
             WHERE active = TRUE
             "
@@ -718,6 +896,7 @@ impl Credentials {
                 name: x.username,
                 ..MinecraftProfile::default()
             },
+            account_type: AccountType::from_db_str(&x.user_type),
             access_token: x.access_token,
             refresh_token: x.refresh_token,
             expires: Utc
@@ -734,7 +913,7 @@ impl Credentials {
         let res = sqlx::query!(
             "
             SELECT
-                uuid, active, username, access_token, refresh_token, expires
+                uuid, active, username, user_type, access_token, refresh_token, expires
             FROM minecraft_users
             "
         )
@@ -747,6 +926,7 @@ impl Credentials {
                     name: x.username,
                     ..MinecraftProfile::default()
                 },
+                account_type: AccountType::from_db_str(&x.user_type),
                 access_token: x.access_token,
                 refresh_token: x.refresh_token,
                 expires: Utc
@@ -775,6 +955,7 @@ impl Credentials {
         let profile = self.maybe_online_profile().await;
         let expires = self.expires.timestamp();
         let uuid = profile.id.as_hyphenated().to_string();
+        let user_type = self.account_type.as_db_str();
 
         if self.active {
             sqlx::query!(
@@ -789,14 +970,15 @@ impl Credentials {
 
         sqlx::query!(
             "
-            INSERT INTO minecraft_users (uuid, active, username, access_token, refresh_token, expires)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO minecraft_users (uuid, active, username, access_token, refresh_token, expires, user_type)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT (uuid) DO UPDATE SET
                 active = $2,
                 username = $3,
                 access_token = $4,
                 refresh_token = $5,
-                expires = $6
+                expires = $6,
+                user_type = $7
             ",
             uuid,
             self.active,
@@ -804,11 +986,27 @@ impl Credentials {
             self.access_token,
             self.refresh_token,
             expires,
+            user_type,
         )
             .execute(exec)
             .await?;
 
         Ok(())
+    }
+
+    /// Whether a Microsoft account is stored, which guest accounts require.
+    pub async fn has_microsoft_account(
+        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
+    ) -> crate::Result<bool> {
+        let user_type = AccountType::Microsoft.as_db_str();
+        let count = sqlx::query_scalar!(
+            "SELECT COUNT(*) FROM minecraft_users WHERE user_type = $1",
+            user_type,
+        )
+        .fetch_one(exec)
+        .await?;
+
+        Ok(count > 0)
     }
 
     pub async fn remove(
@@ -860,8 +1058,9 @@ impl Serialize for Credentials {
                 ),
         };
 
-        let mut ser = serializer.serialize_struct("Credentials", 5)?;
+        let mut ser = serializer.serialize_struct("Credentials", 6)?;
         ser.serialize_field("profile", &*profile)?;
+        ser.serialize_field("account_type", &self.account_type)?;
         ser.serialize_field("access_token", &self.access_token)?;
         ser.serialize_field("refresh_token", &self.refresh_token)?;
         ser.serialize_field("expires", &self.expires)?;

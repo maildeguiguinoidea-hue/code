@@ -260,6 +260,7 @@ pub async fn get_minecraft_arguments(
     quick_play_version: QuickPlayVersion,
 ) -> crate::Result<Vec<String>> {
     let access_token = credentials.access_token.clone();
+    let user_type = credentials.account_type.as_db_str();
     let profile = if crate::state::is_launching_offline() {
         // Auth servers were already found unreachable; don't spend another
         // round of timeouts on the profile endpoint
@@ -293,6 +294,7 @@ pub async fn get_minecraft_arguments(
                 parse_minecraft_argument(
                     arg,
                     &access_token,
+                    user_type,
                     &profile.name,
                     profile.id,
                     version,
@@ -312,6 +314,7 @@ pub async fn get_minecraft_arguments(
             parsed_arguments.push(parse_minecraft_argument(
                 &x.replace(' ', TEMPORARY_REPLACE_CHAR),
                 &access_token,
+                user_type,
                 &profile.name,
                 profile.id,
                 version,
@@ -344,6 +347,7 @@ pub async fn get_minecraft_arguments(
 fn parse_minecraft_argument(
     argument: &str,
     access_token: &str,
+    user_type: &str,
     username: &str,
     uuid: Uuid,
     version: &str,
@@ -365,7 +369,7 @@ fn parse_minecraft_argument(
         .replace("${uuid}", &uuid.simple().to_string())
         .replace("${clientid}", "c4502edb-87c6-40cb-b595-64a280cf8906")
         .replace("${user_properties}", "{}")
-        .replace("${user_type}", "msa")
+        .replace("${user_type}", user_type)
         .replace("${version_name}", version)
         .replace("${assets_index_name}", asset_index_name)
         .replace(
