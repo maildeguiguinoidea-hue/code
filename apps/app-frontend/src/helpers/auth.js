@@ -64,3 +64,21 @@ export async function remove_user(user) {
 export async function users() {
 	return await invoke('plugin:auth|get_users')
 }
+
+/**
+ * Creates a local guest account and selects it. Requires a stored Microsoft account.
+ * @param {string} username
+ * @returns {Promise<Credential>}
+ */
+export async function create_local_guest_account(username) {
+	return await invoke('plugin:auth|create_local_guest_account', { username })
+}
+
+/**
+ * Renames a local guest account
+ * @param {UUID} id
+ * @param {string} newName
+ */
+export async function rename_local_account(id, newName) {
+	return await invoke('plugin:auth|rename_local_account', { id, newName })
+}

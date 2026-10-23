@@ -2,7 +2,7 @@
 use crate::instance::QuickPlayType;
 use crate::launcher::quick_play_version::QuickPlayServerVersion;
 use crate::launcher::{QuickPlayVersion, parse_rules};
-use crate::state::Credentials;
+use crate::state::{Credentials, MaybeOnlineMinecraftProfile};
 use crate::{
     state::{MemorySettings, WindowSize},
     util::{io::IOError, platform::classpath_separator},
@@ -20,6 +20,11 @@ use std::io::{BufRead, BufReader, ErrorKind};
 use std::net::SocketAddr;
 use std::{collections::HashMap, path::Path};
 use uuid::Uuid;
+
+/// How long a launch may wait for the online profile before using the
+/// stored one. `minecraft_profile` retries up to 6× with a 10 s timeout each.
+const PROFILE_LOOKUP_DEADLINE: std::time::Duration =
+    std::time::Duration::from_secs(4);
 
 // Replaces the space separator with a newline character, as to not split the arguments
 const TEMPORARY_REPLACE_CHAR: &str = "\n";
@@ -255,7 +260,30 @@ pub async fn get_minecraft_arguments(
     quick_play_version: QuickPlayVersion,
 ) -> crate::Result<Vec<String>> {
     let access_token = credentials.access_token.clone();
-    let profile = credentials.maybe_online_profile().await;
+    let user_type = credentials.account_type.as_db_str();
+    let profile = if crate::state::is_launching_offline() {
+        // Auth servers were already found unreachable; don't spend another
+        // round of timeouts on the profile endpoint
+        MaybeOnlineMinecraftProfile::Offline(&credentials.offline_profile)
+    } else {
+        match tokio::time::timeout(
+            PROFILE_LOOKUP_DEADLINE,
+            credentials.maybe_online_profile(),
+        )
+        .await
+        {
+            Ok(profile) => profile,
+            Err(_elapsed) => {
+                tracing::warn!(
+                    "Profile lookup exceeded {PROFILE_LOOKUP_DEADLINE:?}, using stored profile"
+                );
+                credentials.mark_launching_offline();
+                MaybeOnlineMinecraftProfile::Offline(
+                    &credentials.offline_profile,
+                )
+            }
+        }
+    };
     let mut parsed_arguments = Vec::new();
 
     if let Some(arguments) = arguments {
@@ -266,6 +294,7 @@ pub async fn get_minecraft_arguments(
                 parse_minecraft_argument(
                     arg,
                     &access_token,
+                    user_type,
                     &profile.name,
                     profile.id,
                     version,
@@ -285,6 +314,7 @@ pub async fn get_minecraft_arguments(
             parsed_arguments.push(parse_minecraft_argument(
                 &x.replace(' ', TEMPORARY_REPLACE_CHAR),
                 &access_token,
+                user_type,
                 &profile.name,
                 profile.id,
                 version,
@@ -317,6 +347,7 @@ pub async fn get_minecraft_arguments(
 fn parse_minecraft_argument(
     argument: &str,
     access_token: &str,
+    user_type: &str,
     username: &str,
     uuid: Uuid,
     version: &str,
@@ -338,7 +369,7 @@ fn parse_minecraft_argument(
         .replace("${uuid}", &uuid.simple().to_string())
         .replace("${clientid}", "c4502edb-87c6-40cb-b595-64a280cf8906")
         .replace("${user_properties}", "{}")
-        .replace("${user_type}", "msa")
+        .replace("${user_type}", user_type)
         .replace("${version_name}", version)
         .replace("${assets_index_name}", asset_index_name)
         .replace(

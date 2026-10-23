@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT uuid FROM minecraft_users WHERE uuid = $1",
+  "describe": {
+    "columns": [
+      {
+        "name": "uuid",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "3439040f1c8ea6c21d94662d3cbd35767d7194aef1f6bc3abed41c741b292200"
+}

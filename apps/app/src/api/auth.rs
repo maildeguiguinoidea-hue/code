@@ -14,6 +14,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             get_default_user,
             set_default_user,
             get_users,
+            get_launch_auth_status,
+            create_local_guest_account,
+            rename_local_account,
         ])
         .build()
 }
@@ -97,6 +100,28 @@ pub async fn get_default_user() -> Result<Option<uuid::Uuid>> {
 #[tauri::command]
 pub async fn set_default_user(user: uuid::Uuid) -> Result<()> {
     Ok(minecraft_auth::set_default_user(user).await?)
+}
+
+#[tauri::command]
+pub async fn get_launch_auth_status() -> Result<LaunchAuthStatus> {
+    Ok(minecraft_auth::launch_auth_status())
+}
+
+/// Create a local guest account, which requires a stored Microsoft account
+#[tauri::command]
+pub async fn create_local_guest_account(
+    username: String,
+) -> Result<Credentials> {
+    Ok(minecraft_auth::create_guest_account(&username).await?)
+}
+
+/// Rename a local guest account
+#[tauri::command]
+pub async fn rename_local_account(
+    id: uuid::Uuid,
+    new_name: String,
+) -> Result<()> {
+    Ok(minecraft_auth::rename_guest_account(id, &new_name).await?)
 }
 
 /// Get a copy of the list of all user credentials

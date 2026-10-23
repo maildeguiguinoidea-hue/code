@@ -20,6 +20,12 @@ pub async fn check_reachable() -> crate::Result<()> {
     Ok(())
 }
 
+/// How the most recent launch authenticated: online, or offline with the
+/// stored account because the auth servers were unreachable.
+pub fn launch_auth_status() -> crate::state::LaunchAuthStatus {
+    crate::state::launch_auth_status()
+}
+
 #[tracing::instrument]
 pub async fn begin_login() -> crate::Result<MinecraftLoginFlow> {
     let state = State::get().await?;
@@ -46,6 +52,25 @@ pub async fn finish_login(
     }
 
     Ok(credentials)
+}
+
+/// Create a local guest account and select it
+#[tracing::instrument]
+pub async fn create_guest_account(
+    username: &str,
+) -> crate::Result<Credentials> {
+    let state = State::get().await?;
+    crate::state::create_guest_account(username, &state.pool).await
+}
+
+/// Rename a local guest account
+#[tracing::instrument]
+pub async fn rename_guest_account(
+    uuid: uuid::Uuid,
+    new_name: &str,
+) -> crate::Result<()> {
+    let state = State::get().await?;
+    crate::state::rename_guest_account(uuid, new_name, &state.pool).await
 }
 
 #[tracing::instrument]

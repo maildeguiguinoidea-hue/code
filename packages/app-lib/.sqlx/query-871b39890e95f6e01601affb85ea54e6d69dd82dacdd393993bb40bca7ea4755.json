@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n            SELECT\n                uuid, active, username, access_token, refresh_token, expires\n            FROM minecraft_users\n            ",
+  "query": "\n            SELECT\n                uuid, active, username, user_type, access_token, refresh_token, expires\n            FROM minecraft_users\n            WHERE active = TRUE\n            ",
   "describe": {
     "columns": [
       {
@@ -19,18 +19,23 @@
         "type_info": "Text"
       },
       {
-        "name": "access_token",
+        "name": "user_type",
         "ordinal": 3,
         "type_info": "Text"
       },
       {
-        "name": "refresh_token",
+        "name": "access_token",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "expires",
+        "name": "refresh_token",
         "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "expires",
+        "ordinal": 6,
         "type_info": "Integer"
       }
     ],
@@ -43,8 +48,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "727e3e1bc8625bbcb833920059bb8cea926ac6c65d613904eff1d740df30acda"
+  "hash": "871b39890e95f6e01601affb85ea54e6d69dd82dacdd393993bb40bca7ea4755"
 }

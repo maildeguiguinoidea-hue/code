@@ -72,27 +72,183 @@
 			</template>
 			<div class="flex flex-col gap-2 px-2 pt-2">
 				<Button
-					v-if="accounts.length > 0"
 					class="w-full !bg-button-bg !text-primary ![box-shadow:var(--shadow-button)]"
-					:disabled="loginDisabled"
-					@click="login()"
+					@click="openOptions"
 				>
-					<PlusIcon />
-					{{ formatMessage(messages.addAccount) }}
+					<SettingsIcon />
+					{{ formatMessage(messages.accountOptions) }}
 				</Button>
 			</div>
 		</div>
 	</Accordion>
+	<NewModal
+		ref="optionsModal"
+		no-padding
+		scrollable
+		max-width="520px"
+		width="520px"
+		:header="formatMessage(messages.accountOptions)"
+		:on-hide="resetOptions"
+	>
+		<div class="flex flex-col gap-3 p-6">
+			<span class="font-semibold text-contrast">{{ formatMessage(messages.yourAccounts) }}</span>
+			<div class="flex flex-col gap-2">
+				<div
+					v-for="account in accounts"
+					:key="account.profile.id"
+					class="flex flex-col gap-1 rounded-xl bg-surface-2 px-3 py-2.5"
+				>
+					<Transition
+						mode="out-in"
+						enter-active-class="transition duration-150 ease-out"
+						enter-from-class="opacity-0 -translate-y-1"
+						leave-active-class="transition duration-100 ease-in"
+						leave-to-class="opacity-0"
+					>
+						<form
+							v-if="renamingId === account.profile.id"
+							class="flex items-center gap-2"
+							@submit.prevent="saveRename(account)"
+						>
+							<Avatar :src="getAccountAvatarUrl(account)" size="32px" />
+							<Input
+								v-model="renameInput"
+								type="text"
+								:maxlength="16"
+								:error="!!renameError"
+								:aria-label="formatMessage(messages.guestName)"
+								wrapper-class="min-w-0 flex-1"
+								@keydown.esc.stop="cancelRename()"
+							/>
+							<IconButton
+								v-tooltip="formatMessage(messages.save)"
+								type="quiet"
+								:label="formatMessage(messages.save)"
+								:disabled="!!renameError || renameBusy"
+								@click="saveRename(account)"
+							>
+								<CheckIcon />
+							</IconButton>
+							<IconButton
+								v-tooltip="formatMessage(messages.cancel)"
+								type="quiet"
+								:label="formatMessage(messages.cancel)"
+								@click="cancelRename()"
+							>
+								<XIcon />
+							</IconButton>
+						</form>
+						<div v-else class="flex min-w-0 items-center gap-3">
+							<Avatar :src="getAccountAvatarUrl(account)" size="32px" />
+							<div class="flex min-w-0 flex-1 flex-col">
+								<span class="truncate font-medium text-contrast">{{ account.profile.name }}</span>
+								<span class="text-xs text-secondary">
+									{{
+										isGuest(account)
+											? formatMessage(messages.localGuest)
+											: formatMessage(messages.microsoftAccount)
+									}}
+								</span>
+							</div>
+							<span
+								v-if="selectedAccount?.profile.id === account.profile.id"
+								class="rounded-full border border-solid border-brand bg-brand-highlight px-2 py-0.5 text-xs font-medium text-brand"
+							>
+								{{ formatMessage(messages.active) }}
+							</span>
+							<IconButton
+								v-if="isGuest(account)"
+								v-tooltip="formatMessage(messages.renameAccount)"
+								type="quiet"
+								:label="formatMessage(messages.renameAccount)"
+								@click="startRename(account)"
+							>
+								<EditIcon />
+							</IconButton>
+						</div>
+					</Transition>
+					<span v-if="renamingId === account.profile.id && renameError" class="text-xs text-red">
+						{{ renameError }}
+					</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="h-px bg-divider" />
+
+		<div class="flex flex-col gap-4 bg-surface-2 p-6">
+			<span class="font-semibold text-contrast">{{ formatMessage(messages.createAccount) }}</span>
+			<div class="grid grid-cols-2 gap-3">
+				<Button class="w-full" color="brand" :disabled="loginDisabled" @click="login()">
+					<LogInIcon v-if="!loginDisabled" />
+					<SpinnerIcon v-else class="animate-spin" />
+					{{ formatMessage(messages.createOnline) }}
+				</Button>
+				<Button
+					class="w-full"
+					:aria-expanded="guestFormOpen"
+					:disabled="!hasMicrosoftAccount"
+					@click="guestFormOpen = !guestFormOpen"
+				>
+					<UserPlusIcon />
+					{{ formatMessage(messages.createLocalGuest) }}
+				</Button>
+			</div>
+			<p v-if="!hasMicrosoftAccount" class="m-0 text-sm text-secondary">
+				{{ formatMessage(messages.guestRequiresMicrosoft) }}
+			</p>
+			<Transition
+				enter-active-class="transition duration-150 ease-out"
+				enter-from-class="opacity-0 -translate-y-1"
+				leave-active-class="transition duration-100 ease-in"
+				leave-to-class="opacity-0"
+			>
+				<form
+					v-if="guestFormOpen && hasMicrosoftAccount"
+					class="flex flex-col gap-2"
+					@submit.prevent="createGuest()"
+				>
+					<label for="guest-account-name" class="text-sm font-medium text-contrast">
+						{{ formatMessage(messages.guestName) }}
+					</label>
+					<div class="flex gap-2">
+						<Input
+							id="guest-account-name"
+							v-model="guestName"
+							type="text"
+							:maxlength="16"
+							:error="!!guestNameError"
+							:placeholder="formatMessage(messages.guestNamePlaceholder)"
+							wrapper-class="min-w-0 flex-1"
+						/>
+						<Button
+							color="brand"
+							:disabled="!guestName || !!guestNameError || guestBusy"
+							@click="createGuest()"
+						>
+							<CheckIcon />
+							{{ formatMessage(messages.createGuest) }}
+						</Button>
+					</div>
+					<span v-if="guestNameError" class="text-xs text-red">{{ guestNameError }}</span>
+				</form>
+			</Transition>
+		</div>
+	</NewModal>
 </template>
 
 <script setup lang="ts">
 import {
+	CheckIcon,
+	EditIcon,
 	LogInIcon,
-	PlusIcon,
 	RadioButtonCheckedIcon,
 	RadioButtonIcon,
+	SettingsIcon,
 	SpinnerIcon,
 	TrashIcon,
+	UserPlusIcon,
+	XIcon,
 } from '@modrinth/assets'
 import {
 	Accordion,
@@ -101,6 +257,8 @@ import {
 	defineMessages,
 	IconButton,
 	injectNotificationManager,
+	Input,
+	NewModal,
 	useVIntl,
 } from '@modrinth/ui'
 import type { Ref } from 'vue'
@@ -110,9 +268,11 @@ import { useAppEvent } from '@/composables/use-app-event'
 import { handleSevereError } from '@/composables/use-error.js'
 import { trackEvent } from '@/helpers/analytics'
 import {
+	create_local_guest_account,
 	get_default_user,
 	login as login_flow,
 	remove_user,
+	rename_local_account,
 	set_default_user,
 	users,
 } from '@/helpers/auth'
@@ -132,7 +292,10 @@ type MinecraftCredential = {
 		id: string
 		name: string
 	}
+	account_type?: 'microsoft' | 'guest'
 }
+
+const GUEST_NAME_PATTERN = /^[A-Za-z0-9_]{1,16}$/
 
 const accounts: Ref<MinecraftCredential[]> = ref([])
 const loginDisabled = ref(false)
@@ -247,6 +410,81 @@ async function login() {
 	loginDisabled.value = false
 }
 
+const optionsModal = ref<InstanceType<typeof NewModal>>()
+const guestFormOpen = ref(false)
+const guestName = ref('')
+const guestBusy = ref(false)
+const renamingId = ref<string | null>(null)
+const renameInput = ref('')
+const renameBusy = ref(false)
+
+const hasMicrosoftAccount = computed(() => accounts.value.some((account) => !isGuest(account)))
+
+function isGuest(account: MinecraftCredential) {
+	return account.account_type === 'guest'
+}
+
+function openOptions(event?: MouseEvent) {
+	optionsModal.value?.show(event)
+}
+
+function resetOptions() {
+	cancelRename()
+	guestFormOpen.value = false
+	guestName.value = ''
+}
+
+function validateGuestName(name: string) {
+	return GUEST_NAME_PATTERN.test(name) ? undefined : formatMessage(messages.invalidGuestName)
+}
+
+const guestNameError = computed(() =>
+	guestName.value ? validateGuestName(guestName.value) : undefined,
+)
+const renameError = computed(() => validateGuestName(renameInput.value))
+
+async function createGuest() {
+	if (!guestName.value || guestNameError.value || guestBusy.value) return
+
+	guestBusy.value = true
+	try {
+		const created = await create_local_guest_account(guestName.value)
+		guestName.value = ''
+		guestFormOpen.value = false
+		await setAccount(created)
+	} catch (error) {
+		handleError(error as Error)
+	} finally {
+		guestBusy.value = false
+	}
+}
+
+function startRename(account: MinecraftCredential) {
+	renamingId.value = account.profile.id
+	renameInput.value = account.profile.name
+}
+
+function cancelRename() {
+	renamingId.value = null
+	renameInput.value = ''
+}
+
+async function saveRename(account: MinecraftCredential) {
+	if (renameError.value || renameBusy.value) return
+
+	renameBusy.value = true
+	try {
+		await rename_local_account(account.profile.id, renameInput.value)
+		cancelRename()
+		await refreshValues()
+		emit('change')
+	} catch (error) {
+		handleError(error as Error)
+	} finally {
+		renameBusy.value = false
+	}
+}
+
 async function logout(id: string) {
 	await remove_user(id).catch(handleError)
 	await refreshValues()
@@ -269,9 +507,69 @@ const messages = defineMessages({
 		id: 'minecraft-account.not-signed-in',
 		defaultMessage: 'Not signed in',
 	},
-	addAccount: {
-		id: 'minecraft-account.add-account',
-		defaultMessage: 'Add account',
+	accountOptions: {
+		id: 'minecraft-account.account-options',
+		defaultMessage: 'Account Options',
+	},
+	yourAccounts: {
+		id: 'minecraft-account.your-accounts',
+		defaultMessage: 'Your accounts',
+	},
+	active: {
+		id: 'minecraft-account.active',
+		defaultMessage: 'Active',
+	},
+	microsoftAccount: {
+		id: 'minecraft-account.type.microsoft',
+		defaultMessage: 'Microsoft account',
+	},
+	localGuest: {
+		id: 'minecraft-account.type.local-guest',
+		defaultMessage: 'Local guest',
+	},
+	renameAccount: {
+		id: 'minecraft-account.rename-account',
+		defaultMessage: 'Rename account',
+	},
+	save: {
+		id: 'minecraft-account.save',
+		defaultMessage: 'Save',
+	},
+	cancel: {
+		id: 'minecraft-account.cancel',
+		defaultMessage: 'Cancel',
+	},
+	createAccount: {
+		id: 'minecraft-account.create-account',
+		defaultMessage: 'Create account',
+	},
+	createOnline: {
+		id: 'minecraft-account.create-online',
+		defaultMessage: 'Create Account (Online)',
+	},
+	createLocalGuest: {
+		id: 'minecraft-account.create-local-guest',
+		defaultMessage: 'Create Account (Local Guest)',
+	},
+	guestRequiresMicrosoft: {
+		id: 'minecraft-account.guest-requires-microsoft',
+		defaultMessage: 'Sign in with a Microsoft account first to create local guest accounts.',
+	},
+	guestName: {
+		id: 'minecraft-account.guest-name',
+		defaultMessage: 'Guest name',
+	},
+	guestNamePlaceholder: {
+		id: 'minecraft-account.guest-name-placeholder',
+		defaultMessage: 'Nickname',
+	},
+	invalidGuestName: {
+		id: 'minecraft-account.invalid-guest-name',
+		defaultMessage: 'Use 1 to 16 letters, digits or underscores.',
+	},
+	createGuest: {
+		id: 'minecraft-account.create-guest',
+		defaultMessage: 'Create guest',
 	},
 	removeAccount: {
 		id: 'minecraft-account.remove-account',
