@@ -1,8 +1,14 @@
-# Builds the Windows installer in the cloud and publishes it to my-modrinth-releases,
-# so friends' apps auto-update. Same steps as make-update.ps1.
+# Builds the Windows and Linux installers in the cloud and publishes them to
+# my-modrinth-releases, so friends' apps auto-update. Same steps as make-update.ps1.
 #
-# Release from any computer:   git tag app-v1.0.3 && git push origin app-v1.0.3
+# Release from any computer:   git tag app-v1.0.4 && git push origin app-v1.0.4
 # (or Actions tab -> "My release" -> Run workflow, and type the version)
+#
+# Each release gets:
+#   Modrinth.App_<version>_x64-setup.exe   Windows installer
+#   Modrinth.App_<version>_amd64.AppImage  Linux, runs anywhere and auto-updates
+#   Modrinth.App_<version>_amd64.deb       Linux, for Ubuntu/Debian/Mint (no auto-update)
+#   latest.json                            what the apps check for updates
 #
 # One-time setup, in this repo's Settings -> Secrets and variables -> Actions:
 #   TAURI_PRIVATE_KEY    contents of myapp.key
@@ -17,22 +23,24 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g. 1.0.3), must be higher than the last release'
+        description: 'Version (e.g. 1.0.4), must be higher than the last release'
         required: true
 
 env:
   RELEASES_REPO: maildeguiguinoidea-hue/my-modrinth-releases
 
 jobs:
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 150
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      notes: ${{ steps.version.outputs.notes }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
       - name: Work out the version
-        shell: bash
+        id: version
         env:
           INPUT_VERSION: ${{ inputs.version }}
           HAS_KEY: ${{ secrets.TAURI_PRIVATE_KEY != '' }}
@@ -41,13 +49,33 @@ jobs:
           VERSION="$INPUT_VERSION"
           [ -z "$VERSION" ] && VERSION="${GITHUB_REF_NAME#app-v}"
           if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::'$VERSION' isn't a version like 1.0.3"; exit 1
+            echo "::error::'$VERSION' isn't a version like 1.0.4"; exit 1
           fi
-          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          echo "NOTES=$(git log -1 --format=%s)" >> "$GITHUB_ENV"
           [ -f apps/app/tauri-myrelease.conf.json ] || { echo "::error::apps/app/tauri-myrelease.conf.json is missing, commit it from the Windows PC"; exit 1; }
           [ "$HAS_KEY" = true ] || { echo "::error::The TAURI_PRIVATE_KEY secret isn't set"; exit 1; }
           [ "$HAS_TOKEN" = true ] || { echo "::error::The RELEASES_TOKEN secret isn't set"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "notes=$(git log -1 --format=%s)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    strategy:
+      matrix:
+        include:
+          - name: windows
+            os: windows-latest
+            bundles: nsis
+          # The oldest supported Ubuntu, so the AppImage also runs on older distros
+          - name: linux
+            os: ubuntu-22.04
+            bundles: appimage,deb
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -66,6 +94,12 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libfuse2 patchelf
+
       - name: Set version and load .env
         shell: bash
         run: |
@@ -77,7 +111,8 @@ jobs:
       - name: Install packages
         run: pnpm install
 
-      - name: Build and sign the installer
+      - name: Build and sign the installers
+        shell: bash
         working-directory: apps/app
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -85,32 +120,73 @@ jobs:
           CARGO_PROFILE_RELEASE_LTO: thin
         run: |
           # GitHub doesn't allow empty secrets, so a key without a password is stored as a space
-          $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD".Trim()
+          [ -z "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD// }" ] && export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
           pnpm -w i18n:coverage
-          pnpm tauri build --bundles nsis --config tauri-myrelease.conf.json
+          pnpm tauri build --bundles ${{ matrix.bundles }} --config tauri-myrelease.conf.json
 
-      - name: Write latest.json
+      - name: Collect the installers
         shell: bash
         run: |
-          cd target/release/bundle/nsis
-          EXE="$(ls -t *_${VERSION}_x64-setup.exe | head -1)"
-          # No spaces in the uploaded name, so the download link is predictable
-          ASSET="$(echo "$EXE" | tr ' ' '.')"
-          [ "$EXE" != "$ASSET" ] && mv "$EXE" "$ASSET" && mv "$EXE.sig" "$ASSET.sig"
-          node -e "
-            const fs = require('fs')
-            fs.writeFileSync('latest.json', JSON.stringify({
-              version: process.env.VERSION,
-              notes: process.env.NOTES,
-              pub_date: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-              platforms: { 'windows-x86_64': {
-                signature: fs.readFileSync('$ASSET.sig', 'utf8').trim(),
-                url: 'https://github.com/${RELEASES_REPO}/releases/download/v${VERSION}/$ASSET',
-              } },
-            }, null, 2))
-          "
+          mkdir out
+          if [ "$RUNNER_OS" = Windows ]; then
+            files=(target/release/bundle/nsis/*_"${VERSION}"_x64-setup.exe)
+          else
+            files=(target/release/bundle/appimage/*_"${VERSION}"_amd64.AppImage target/release/bundle/deb/*_"${VERSION}"_amd64.deb)
+          fi
+          for file in "${files[@]}"; do
+            # No spaces in the uploaded names, so the download links are predictable
+            name="$(basename "$file" | tr ' ' '.')"
+            cp "$file" "out/$name"
+            [ -f "$file.sig" ] && cp "$file.sig" "out/$name.sig"
+          done
+          ls -l out
+
+      - name: Keep the installers for the publish job
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: out/*
+          if-no-files-found: error
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+      NOTES: ${{ needs.version.outputs.notes }}
+    steps:
+      - name: Get the installers
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Write latest.json
+        working-directory: dist
+        run: |
+          EXE="$(ls *_x64-setup.exe)"
+          APPIMAGE="$(ls *_amd64.AppImage)"
+          BASE_URL="https://github.com/${RELEASES_REPO}/releases/download/v${VERSION}"
+          jq -n \
+            --arg version "$VERSION" \
+            --arg notes "$NOTES" \
+            --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --rawfile windowsSig "$EXE.sig" \
+            --arg windowsUrl "$BASE_URL/$EXE" \
+            --rawfile linuxSig "$APPIMAGE.sig" \
+            --arg linuxUrl "$BASE_URL/$APPIMAGE" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $date,
+              platforms: {
+                "windows-x86_64": { signature: ($windowsSig | rtrimstr("\n")), url: $windowsUrl },
+                "linux-x86_64": { signature: ($linuxSig | rtrimstr("\n")), url: $linuxUrl }
+              }
+            }' > latest.json
           cat latest.json
-          echo "ASSET_PATH=target/release/bundle/nsis/$ASSET" >> "$GITHUB_ENV"
+          rm -f *.sig
+          ls -l
 
       - name: Publish the release
         uses: softprops/action-gh-release@v2
@@ -120,6 +196,4 @@ jobs:
           tag_name: v${{ env.VERSION }}
           name: v${{ env.VERSION }}
           body: ${{ env.NOTES }}
-          files: |
-            ${{ env.ASSET_PATH }}
-            target/release/bundle/nsis/latest.json
+          files: dist/*
