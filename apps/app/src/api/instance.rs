@@ -961,10 +961,7 @@ pub async fn instance_open_synced_options_folder<R: Runtime>(
     app_handle: AppHandle<R>,
 ) -> Result<()> {
     let path = theseus::instance::get_synced_options_folder().await?;
-    app_handle
-        .opener()
-        .open_path(path.to_string_lossy(), None::<&str>)
-        .map_err(|error| std::io::Error::other(error.to_string()))?;
+    crate::api::utils::open_with_default_app(&app_handle, &path)?;
     Ok(())
 }
 

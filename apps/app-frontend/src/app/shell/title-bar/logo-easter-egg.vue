@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import firstVideoSrc from '@/assets/easter-egg/n1.mp4'
 import secondVideoSrc from '@/assets/easter-egg/n2.mp4'
+import { playableMediaUrl } from '@/helpers/media'
 
 // Second (in n1.mp4) where the explosion starts
 const EXPLOSION_AT = 1.85
@@ -12,6 +13,13 @@ type Stage = 'idle' | 'intro' | 'boom' | 'outro' | 'exit'
 const stage = ref<Stage>('idle')
 const firstVideo = ref<HTMLVideoElement | null>(null)
 const secondVideo = ref<HTMLVideoElement | null>(null)
+const firstVideoUrl = ref(firstVideoSrc)
+const secondVideoUrl = ref(secondVideoSrc)
+
+onMounted(async () => {
+	firstVideoUrl.value = await playableMediaUrl(firstVideoSrc)
+	secondVideoUrl.value = await playableMediaUrl(secondVideoSrc)
+})
 
 let frame = 0
 let shakeTimeout: ReturnType<typeof setTimeout> | undefined
@@ -90,7 +98,7 @@ defineExpose({ start })
 			<video
 				v-show="stage === 'intro' || stage === 'boom'"
 				ref="firstVideo"
-				:src="firstVideoSrc"
+				:src="firstVideoUrl"
 				class="egg-video egg-first"
 				playsinline
 				@ended="onFirstEnded"
@@ -99,7 +107,7 @@ defineExpose({ start })
 			<video
 				v-show="stage === 'outro' || stage === 'exit'"
 				ref="secondVideo"
-				:src="secondVideoSrc"
+				:src="secondVideoUrl"
 				class="egg-video egg-second"
 				playsinline
 				@ended="onSecondEnded"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import bombSoundSrc from '@/assets/easter-egg/bomb.ogg'
 import bombImage from '@/assets/easter-egg/bomb.webp'
@@ -7,6 +7,7 @@ import bombLightsImage from '@/assets/easter-egg/bomb-lights.webp'
 import portalSoundSrc from '@/assets/easter-egg/portal.ogg'
 import portalImage from '@/assets/easter-egg/portal.webp'
 import smokeSpriteSrc from '@/assets/easter-egg/smoke.webp'
+import { playableMediaUrl } from '@/helpers/media'
 
 // Clicks needed, and the max gap between them (ms)
 const CLICKS_TO_ARM = 4
@@ -131,6 +132,15 @@ let timers: ReturnType<typeof setTimeout>[] = []
 let portalSound: HTMLAudioElement | null = null
 let bombSound: HTMLAudioElement | null = null
 let bombSoundFailed = false
+let portalSoundUrl = portalSoundSrc
+let bombSoundUrl = bombSoundSrc
+
+onMounted(async () => {
+	;[portalSoundUrl, bombSoundUrl] = await Promise.all([
+		playableMediaUrl(portalSoundSrc),
+		playableMediaUrl(bombSoundSrc),
+	])
+})
 
 function later(ms: number, fn: () => void) {
 	timers.push(setTimeout(fn, ms))
@@ -174,12 +184,12 @@ async function start() {
 	phase.value = 'portal'
 	portalOpen.value = true
 	window.addEventListener('keydown', onKeydown)
-	portalSound = playSound(portalSoundSrc, 1)
+	portalSound = playSound(portalSoundUrl, 1)
 
 	loadSmokeSprites()
 
 	// Preload the bomb sound so it starts exactly on landing
-	bombSound = new Audio(bombSoundSrc)
+	bombSound = new Audio(bombSoundUrl)
 	bombSound.preload = 'auto'
 	bombSound.load()
 
