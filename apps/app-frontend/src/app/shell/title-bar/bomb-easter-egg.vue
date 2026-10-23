@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref } from 'vue'
 
+import bombSoundSrc from '@/assets/easter-egg/bomb.ogg'
 import bombImage from '@/assets/easter-egg/bomb.webp'
 import bombLightsImage from '@/assets/easter-egg/bomb-lights.webp'
-import bombSoundSrc from '@/assets/easter-egg/bomb.ogg'
-import portalImage from '@/assets/easter-egg/portal.webp'
 import portalSoundSrc from '@/assets/easter-egg/portal.ogg'
+import portalImage from '@/assets/easter-egg/portal.webp'
 import smokeSpriteSrc from '@/assets/easter-egg/smoke.webp'
 
 // Clicks needed, and the max gap between them (ms)
@@ -199,12 +199,18 @@ async function start() {
 	frame = requestAnimationFrame(tick)
 }
 
-// Seconds into bomb.ogg. Falls back to the wall clock if the sound can't play.
+// How far bomb.ogg may lag behind the wall clock before it counts as stalled (s)
+const SOUND_MAX_LAG = 0.25
+
+// Seconds into bomb.ogg. Follows the wall clock if the sound can't play, or
+// starts but stalls (as with mismatched GStreamer plugins on Linux).
 function soundTime(now: number): number {
+	const wallTime = landedAt ? (now - landedAt) / 1000 : 0
 	if (bombSound && !bombSoundFailed && !bombSound.paused && bombSound.currentTime > 0) {
-		return bombSound.currentTime
+		if (bombSound.currentTime >= wallTime - SOUND_MAX_LAG) return bombSound.currentTime
+		bombSoundFailed = true
 	}
-	return landedAt ? (now - landedAt) / 1000 : 0
+	return wallTime
 }
 
 function tick(now: number) {
@@ -241,13 +247,20 @@ function tick(now: number) {
 		bombEl.value.style.transform = `translate(-50%, -50%) translate(${jx}px, ${landY.value + jy}px) rotate(${10 + jx * 0.6}deg) scale(${scale})`
 
 		// Only opacity/transform change per frame: cheap, so no stutter
-		if (lightsEl.value) lightsEl.value.style.opacity = String(Math.min(1, 0.12 + 0.88 * b + 0.6 * finalSwell))
-		if (glowEl.value) glowEl.value.style.opacity = String(Math.min(1, b * (0.5 + 0.5 * progress) + finalSwell))
+		if (lightsEl.value)
+			lightsEl.value.style.opacity = String(Math.min(1, 0.12 + 0.88 * b + 0.6 * finalSwell))
+		if (glowEl.value)
+			glowEl.value.style.opacity = String(Math.min(1, b * (0.5 + 0.5 * progress) + finalSwell))
 		if (auraEl.value) {
-			auraEl.value.style.opacity = String(Math.min(1, 0.1 + 0.45 * progress + 0.4 * b + 0.5 * finalSwell))
+			auraEl.value.style.opacity = String(
+				Math.min(1, 0.1 + 0.45 * progress + 0.4 * b + 0.5 * finalSwell),
+			)
 			auraEl.value.style.transform = `scale(${1 + 0.25 * b + 0.7 * finalSwell})`
 		}
-		if (vignetteEl.value) vignetteEl.value.style.opacity = String(Math.min(1, 0.2 + 0.45 * progress + 0.35 * b + 0.3 * finalSwell))
+		if (vignetteEl.value)
+			vignetteEl.value.style.opacity = String(
+				Math.min(1, 0.2 + 0.45 * progress + 0.35 * b + 0.3 * finalSwell),
+			)
 		if (dimEl.value) dimEl.value.style.opacity = String(0.55 * progress + 0.25 * finalSwell)
 
 		// The whole app trembles with the beeps
@@ -272,7 +285,8 @@ function tick(now: number) {
 	}
 
 	lastFrame = now
-	const running = phase.value !== 'idle' && phase.value !== 'settled' && phase.value !== 'rebuilding'
+	const running =
+		phase.value !== 'idle' && phase.value !== 'settled' && phase.value !== 'rebuilding'
 	if (running || particles.length) {
 		frame = requestAnimationFrame(tick)
 	}
@@ -817,7 +831,12 @@ onBeforeUnmount(cleanUp)
 			ref="layer"
 			class="bomb-layer"
 			:class="{ clickable: phase === 'settled' }"
-			:style="{ '--cx': `${centerX}px`, '--portal-y': `${portalY}px`, '--land-y': `${landY}px`, '--bomb-size': `${bombSize}px` }"
+			:style="{
+				'--cx': `${centerX}px`,
+				'--portal-y': `${portalY}px`,
+				'--land-y': `${landY}px`,
+				'--bomb-size': `${bombSize}px`,
+			}"
 			@click="rebuild"
 		>
 			<div ref="dimEl" class="dim" />
@@ -979,7 +998,12 @@ onBeforeUnmount(cleanUp)
 	position: absolute;
 	inset: -30% -15%;
 	border-radius: 50%;
-	background: radial-gradient(ellipse, rgba(140, 255, 70, 0.55) 0%, rgba(80, 220, 40, 0.25) 45%, transparent 70%);
+	background: radial-gradient(
+		ellipse,
+		rgba(140, 255, 70, 0.55) 0%,
+		rgba(80, 220, 40, 0.25) 45%,
+		transparent 70%
+	);
 	animation: portal-pulse 0.5s ease-in-out infinite alternate;
 	pointer-events: none;
 }
@@ -991,7 +1015,12 @@ onBeforeUnmount(cleanUp)
 	width: 22%;
 	height: 26%;
 	border-radius: 50%;
-	background: radial-gradient(ellipse, rgba(255, 255, 220, 0.9) 0%, rgba(220, 255, 120, 0.5) 40%, transparent 72%);
+	background: radial-gradient(
+		ellipse,
+		rgba(255, 255, 220, 0.9) 0%,
+		rgba(220, 255, 120, 0.5) 40%,
+		transparent 72%
+	);
 	transform: translate(-50%, -50%);
 	mix-blend-mode: screen;
 	animation: eye-pulse 0.35s ease-in-out infinite alternate;
@@ -1019,8 +1048,16 @@ onBeforeUnmount(cleanUp)
 	inset: 0;
 	z-index: 4;
 	/* Soft edge at the portal's centre so the bomb seems to push out through it */
-	-webkit-mask-image: linear-gradient(to bottom, transparent calc(var(--portal-y) - 4px), #000 calc(var(--portal-y) + 26px));
-	mask-image: linear-gradient(to bottom, transparent calc(var(--portal-y) - 4px), #000 calc(var(--portal-y) + 26px));
+	-webkit-mask-image: linear-gradient(
+		to bottom,
+		transparent calc(var(--portal-y) - 4px),
+		#000 calc(var(--portal-y) + 26px)
+	);
+	mask-image: linear-gradient(
+		to bottom,
+		transparent calc(var(--portal-y) - 4px),
+		#000 calc(var(--portal-y) + 26px)
+	);
 }
 
 .bomb-clip.landed {
@@ -1072,7 +1109,12 @@ onBeforeUnmount(cleanUp)
 	position: absolute;
 	inset: -75%;
 	border-radius: 50%;
-	background: radial-gradient(circle, rgba(255, 50, 160, 0.6) 0%, rgba(255, 20, 110, 0.28) 32%, transparent 62%);
+	background: radial-gradient(
+		circle,
+		rgba(255, 50, 160, 0.6) 0%,
+		rgba(255, 20, 110, 0.28) 32%,
+		transparent 62%
+	);
 	opacity: 0;
 	pointer-events: none;
 }
@@ -1089,7 +1131,12 @@ onBeforeUnmount(cleanUp)
 	width: calc(var(--bomb-size) * 2.2);
 	height: calc(var(--bomb-size) * 0.5);
 	border-radius: 50%;
-	background: radial-gradient(ellipse, rgba(170, 160, 150, 0.55) 0%, rgba(120, 110, 100, 0.25) 45%, transparent 70%);
+	background: radial-gradient(
+		ellipse,
+		rgba(170, 160, 150, 0.55) 0%,
+		rgba(120, 110, 100, 0.25) 45%,
+		transparent 70%
+	);
 	transform: translate(-50%, -50%) scale(0.3);
 	animation: dust 0.7s ease-out forwards;
 }

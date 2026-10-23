@@ -1,6 +1,11 @@
 {
 	"bundle": {
-		"createUpdaterArtifacts": true
+		"createUpdaterArtifacts": true,
+		"linux": {
+			"appimage": {
+				"bundleMediaFramework": true
+			}
+		}
 	},
 	"build": {
 		"features": ["updater"]
