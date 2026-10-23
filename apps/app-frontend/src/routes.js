@@ -120,6 +120,11 @@ export default new createRouter({
 					component: () => import('@/pages/instance/worlds/index.vue'),
 				},
 				{
+					path: 'upgrade',
+					name: 'InstanceUpgrade',
+					component: () => import('@/pages/instance/upgrade/index.vue'),
+				},
+				{
 					path: 'share',
 					name: 'InstanceShare',
 					component: () => import('@/pages/instance/share/index.vue'),

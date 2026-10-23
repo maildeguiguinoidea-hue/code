@@ -87,6 +87,7 @@
 </template>
 <script setup lang="ts">
 import {
+	ArrowBigUpDashIcon,
 	BoxesIcon,
 	ClipboardCopyIcon,
 	EditIcon,
@@ -540,6 +541,14 @@ const tabs = computed(() => {
 			label: formatMessage(messages.worldsTab),
 			href: `${basePath.value}/worlds`,
 			icon: GlobeIcon,
+		})
+	}
+
+	if (instance.value?.loader !== 'vanilla') {
+		instanceTabs.push({
+			label: 'Upgrade check',
+			href: `${basePath.value}/upgrade`,
+			icon: ArrowBigUpDashIcon,
 		})
 	}
 

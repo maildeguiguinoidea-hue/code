@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppActionBar from './action-bar.vue'
+import BombEasterEgg from './bomb-easter-egg.vue'
 import Breadcrumbs from './breadcrumbs.vue'
 import LogoEasterEgg from './logo-easter-egg.vue'
 import WindowControls from './window-controls.vue'
@@ -65,6 +66,7 @@ const messages = defineMessages({
 						:class="{ 'opacity-20': !canNavigateForward }"
 					/>
 				</IconButton>
+				<BombEasterEgg />
 			</div>
 			<Breadcrumbs />
 		</div>
