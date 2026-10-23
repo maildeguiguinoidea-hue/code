@@ -84,6 +84,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           CARGO_PROFILE_RELEASE_LTO: thin
         run: |
+          # GitHub doesn't allow empty secrets, so a key without a password is stored as a space
+          $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD".Trim()
           pnpm -w i18n:coverage
           pnpm tauri build --bundles nsis --config tauri-myrelease.conf.json
 
