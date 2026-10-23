@@ -58,9 +58,7 @@ pub use self::projects::{
     set_project_locked, switch_project_version_with_dependencies,
     toggle_disable_project, update_managed_modrinth_version, update_project,
 };
-pub use self::run::{
-    QuickPlayType, kill, run, try_update_playtime_by_instance_id,
-};
+pub use self::run::{QuickPlayType, kill, run};
 pub use self::screenshot_groups::{
     ScreenshotGroup, ScreenshotGroupImport, ScreenshotGroupMembershipUpdate,
     create_screenshot_group, delete_screenshot_group, import_screenshot_groups,

@@ -1001,25 +1001,6 @@ impl Process {
         )
         .await;
 
-        // Publish play time update
-        // Allow failure, it will be stored locally and sent next time
-        // Sent in another thread as first call may take a couple seconds and hold up process ending
-        let playtime_instance_id = instance_id.clone();
-        tokio::spawn(async move {
-            if let Err(e) =
-                crate::api::instance::try_update_playtime_by_instance_id(
-                    &playtime_instance_id,
-                )
-                .await
-            {
-                tracing::warn!(
-                    "Failed to update playtime for instance {}: {}",
-                    playtime_instance_id,
-                    e
-                );
-            }
-        });
-
         let logs_folder = state.directories.instance_logs_dir(&instance_path);
         let log_path = logs_folder.join(LAUNCHER_LOG_PATH);
 
