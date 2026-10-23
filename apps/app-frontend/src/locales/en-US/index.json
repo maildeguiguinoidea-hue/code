@@ -4547,6 +4547,9 @@
   "minecraft-account.account-options": {
     "message": "Account Options"
   },
+  "minecraft-account.active": {
+    "message": "Active"
+  },
   "minecraft-account.cancel": {
     "message": "Cancel"
   },
@@ -4595,14 +4598,14 @@
   "minecraft-account.sign-in": {
     "message": "Sign in to Minecraft"
   },
-  "minecraft-account.sign-in-with-microsoft": {
-    "message": "Sign in with Microsoft"
-  },
   "minecraft-account.type.local-guest": {
     "message": "Local guest"
   },
   "minecraft-account.type.microsoft": {
     "message": "Microsoft account"
+  },
+  "minecraft-account.your-accounts": {
+    "message": "Your accounts"
   },
   "minecraft-required.description": {
     "message": "You need a Microsoft account that owns Minecraft before you can launch and play."

@@ -73,35 +73,52 @@
 			<div class="flex flex-col gap-2 px-2 pt-2">
 				<Button
 					class="w-full !bg-button-bg !text-primary ![box-shadow:var(--shadow-button)]"
-					:aria-expanded="optionsOpen"
-					@click="optionsOpen = !optionsOpen"
+					@click="openOptions"
 				>
 					<SettingsIcon />
 					{{ formatMessage(messages.accountOptions) }}
-					<ChevronDownIcon
-						class="ml-auto transition-transform"
-						:class="{ 'rotate-180': optionsOpen }"
-					/>
 				</Button>
+			</div>
+		</div>
+	</Accordion>
+	<NewModal
+		ref="optionsModal"
+		no-padding
+		scrollable
+		max-width="520px"
+		width="520px"
+		:header="formatMessage(messages.accountOptions)"
+		:on-hide="resetOptions"
+	>
+		<div class="flex flex-col gap-3 p-6">
+			<span class="font-semibold text-contrast">{{ formatMessage(messages.yourAccounts) }}</span>
+			<div class="flex flex-col gap-2">
 				<div
-					v-if="optionsOpen"
-					class="flex flex-col gap-2 rounded-xl border border-solid border-surface-5 bg-surface-3 p-2"
+					v-for="account in accounts"
+					:key="account.profile.id"
+					class="flex flex-col gap-1 rounded-xl bg-surface-2 px-3 py-2.5"
 				>
-					<div v-for="account in accounts" :key="account.profile.id" class="flex flex-col gap-1">
+					<Transition
+						mode="out-in"
+						enter-active-class="transition duration-150 ease-out"
+						enter-from-class="opacity-0 -translate-y-1"
+						leave-active-class="transition duration-100 ease-in"
+						leave-to-class="opacity-0"
+					>
 						<form
 							v-if="renamingId === account.profile.id"
-							class="flex gap-1 items-center"
+							class="flex items-center gap-2"
 							@submit.prevent="saveRename(account)"
 						>
+							<Avatar :src="getAccountAvatarUrl(account)" size="32px" />
 							<Input
 								v-model="renameInput"
 								type="text"
-								size="small"
 								:maxlength="16"
 								:error="!!renameError"
 								:aria-label="formatMessage(messages.guestName)"
 								wrapper-class="min-w-0 flex-1"
-								@keydown.esc="cancelRename()"
+								@keydown.esc.stop="cancelRename()"
 							/>
 							<IconButton
 								v-tooltip="formatMessage(messages.save)"
@@ -121,11 +138,11 @@
 								<XIcon />
 							</IconButton>
 						</form>
-						<div v-else class="flex gap-2 items-center min-w-0">
-							<Avatar :src="getAccountAvatarUrl(account)" size="24px" />
-							<div class="flex flex-col min-w-0 flex-1">
-								<span class="truncate text-primary">{{ account.profile.name }}</span>
-								<span class="text-secondary text-xs">
+						<div v-else class="flex min-w-0 items-center gap-3">
+							<Avatar :src="getAccountAvatarUrl(account)" size="32px" />
+							<div class="flex min-w-0 flex-1 flex-col">
+								<span class="truncate font-medium text-contrast">{{ account.profile.name }}</span>
+								<span class="text-xs text-secondary">
 									{{
 										isGuest(account)
 											? formatMessage(messages.localGuest)
@@ -133,6 +150,12 @@
 									}}
 								</span>
 							</div>
+							<span
+								v-if="selectedAccount?.profile.id === account.profile.id"
+								class="rounded-full border border-solid border-brand bg-brand-highlight px-2 py-0.5 text-xs font-medium text-brand"
+							>
+								{{ formatMessage(messages.active) }}
+							</span>
 							<IconButton
 								v-if="isGuest(account)"
 								v-tooltip="formatMessage(messages.renameAccount)"
@@ -143,72 +166,80 @@
 								<EditIcon />
 							</IconButton>
 						</div>
-						<span v-if="renamingId === account.profile.id && renameError" class="text-red text-xs">
-							{{ renameError }}
-						</span>
-					</div>
-
-					<div class="border-0 border-t border-solid border-surface-5 pt-2 flex flex-col gap-2">
-						<span class="text-secondary text-xs font-semibold">
-							{{ formatMessage(messages.createAccount) }}
-						</span>
-						<Chips
-							v-model="newAccountKind"
-							:items="newAccountKinds"
-							:format-label="formatAccountKind"
-							:capitalize="false"
-							size="small"
-							:aria-label="formatMessage(messages.createAccount)"
-						/>
-						<Button
-							v-if="newAccountKind === 'online'"
-							class="w-full"
-							color="brand"
-							:disabled="loginDisabled"
-							@click="login()"
-						>
-							<LogInIcon v-if="!loginDisabled" />
-							<SpinnerIcon v-else class="animate-spin" />
-							{{ formatMessage(messages.signInWithMicrosoft) }}
-						</Button>
-						<template v-else>
-							<p v-if="!hasMicrosoftAccount" class="m-0 text-secondary text-xs">
-								{{ formatMessage(messages.guestRequiresMicrosoft) }}
-							</p>
-							<form v-else class="flex flex-col gap-2" @submit.prevent="createGuest()">
-								<Input
-									v-model="guestName"
-									type="text"
-									size="small"
-									:maxlength="16"
-									:error="!!guestNameError"
-									:placeholder="formatMessage(messages.guestNamePlaceholder)"
-									:aria-label="formatMessage(messages.guestName)"
-									wrapper-class="w-full"
-								/>
-								<span v-if="guestNameError" class="text-red text-xs">{{ guestNameError }}</span>
-								<Button
-									class="w-full"
-									color="brand"
-									:disabled="!guestName || !!guestNameError || guestBusy"
-									@click="createGuest()"
-								>
-									<UserPlusIcon />
-									{{ formatMessage(messages.createGuest) }}
-								</Button>
-							</form>
-						</template>
-					</div>
+					</Transition>
+					<span v-if="renamingId === account.profile.id && renameError" class="text-xs text-red">
+						{{ renameError }}
+					</span>
 				</div>
 			</div>
 		</div>
-	</Accordion>
+
+		<div class="h-px bg-divider" />
+
+		<div class="flex flex-col gap-4 bg-surface-2 p-6">
+			<span class="font-semibold text-contrast">{{ formatMessage(messages.createAccount) }}</span>
+			<div class="grid grid-cols-2 gap-3">
+				<Button class="w-full" color="brand" :disabled="loginDisabled" @click="login()">
+					<LogInIcon v-if="!loginDisabled" />
+					<SpinnerIcon v-else class="animate-spin" />
+					{{ formatMessage(messages.createOnline) }}
+				</Button>
+				<Button
+					class="w-full"
+					:aria-expanded="guestFormOpen"
+					:disabled="!hasMicrosoftAccount"
+					@click="guestFormOpen = !guestFormOpen"
+				>
+					<UserPlusIcon />
+					{{ formatMessage(messages.createLocalGuest) }}
+				</Button>
+			</div>
+			<p v-if="!hasMicrosoftAccount" class="m-0 text-sm text-secondary">
+				{{ formatMessage(messages.guestRequiresMicrosoft) }}
+			</p>
+			<Transition
+				enter-active-class="transition duration-150 ease-out"
+				enter-from-class="opacity-0 -translate-y-1"
+				leave-active-class="transition duration-100 ease-in"
+				leave-to-class="opacity-0"
+			>
+				<form
+					v-if="guestFormOpen && hasMicrosoftAccount"
+					class="flex flex-col gap-2"
+					@submit.prevent="createGuest()"
+				>
+					<label for="guest-account-name" class="text-sm font-medium text-contrast">
+						{{ formatMessage(messages.guestName) }}
+					</label>
+					<div class="flex gap-2">
+						<Input
+							id="guest-account-name"
+							v-model="guestName"
+							type="text"
+							:maxlength="16"
+							:error="!!guestNameError"
+							:placeholder="formatMessage(messages.guestNamePlaceholder)"
+							wrapper-class="min-w-0 flex-1"
+						/>
+						<Button
+							color="brand"
+							:disabled="!guestName || !!guestNameError || guestBusy"
+							@click="createGuest()"
+						>
+							<CheckIcon />
+							{{ formatMessage(messages.createGuest) }}
+						</Button>
+					</div>
+					<span v-if="guestNameError" class="text-xs text-red">{{ guestNameError }}</span>
+				</form>
+			</Transition>
+		</div>
+	</NewModal>
 </template>
 
 <script setup lang="ts">
 import {
 	CheckIcon,
-	ChevronDownIcon,
 	EditIcon,
 	LogInIcon,
 	RadioButtonCheckedIcon,
@@ -223,11 +254,11 @@ import {
 	Accordion,
 	Avatar,
 	Button,
-	Chips,
 	defineMessages,
 	IconButton,
 	injectNotificationManager,
 	Input,
+	NewModal,
 	useVIntl,
 } from '@modrinth/ui'
 import type { Ref } from 'vue'
@@ -263,8 +294,6 @@ type MinecraftCredential = {
 	}
 	account_type?: 'microsoft' | 'guest'
 }
-
-type NewAccountKind = 'online' | 'guest'
 
 const GUEST_NAME_PATTERN = /^[A-Za-z0-9_]{1,16}$/
 
@@ -381,9 +410,8 @@ async function login() {
 	loginDisabled.value = false
 }
 
-const optionsOpen = ref(false)
-const newAccountKinds: NewAccountKind[] = ['online', 'guest']
-const newAccountKind = ref<NewAccountKind>('online')
+const optionsModal = ref<InstanceType<typeof NewModal>>()
+const guestFormOpen = ref(false)
 const guestName = ref('')
 const guestBusy = ref(false)
 const renamingId = ref<string | null>(null)
@@ -396,8 +424,14 @@ function isGuest(account: MinecraftCredential) {
 	return account.account_type === 'guest'
 }
 
-function formatAccountKind(kind: NewAccountKind) {
-	return formatMessage(kind === 'online' ? messages.createOnline : messages.createLocalGuest)
+function openOptions(event?: MouseEvent) {
+	optionsModal.value?.show(event)
+}
+
+function resetOptions() {
+	cancelRename()
+	guestFormOpen.value = false
+	guestName.value = ''
 }
 
 function validateGuestName(name: string) {
@@ -416,6 +450,7 @@ async function createGuest() {
 	try {
 		const created = await create_local_guest_account(guestName.value)
 		guestName.value = ''
+		guestFormOpen.value = false
 		await setAccount(created)
 	} catch (error) {
 		handleError(error as Error)
@@ -476,6 +511,14 @@ const messages = defineMessages({
 		id: 'minecraft-account.account-options',
 		defaultMessage: 'Account Options',
 	},
+	yourAccounts: {
+		id: 'minecraft-account.your-accounts',
+		defaultMessage: 'Your accounts',
+	},
+	active: {
+		id: 'minecraft-account.active',
+		defaultMessage: 'Active',
+	},
 	microsoftAccount: {
 		id: 'minecraft-account.type.microsoft',
 		defaultMessage: 'Microsoft account',
@@ -507,10 +550,6 @@ const messages = defineMessages({
 	createLocalGuest: {
 		id: 'minecraft-account.create-local-guest',
 		defaultMessage: 'Create Account (Local Guest)',
-	},
-	signInWithMicrosoft: {
-		id: 'minecraft-account.sign-in-with-microsoft',
-		defaultMessage: 'Sign in with Microsoft',
 	},
 	guestRequiresMicrosoft: {
 		id: 'minecraft-account.guest-requires-microsoft',
