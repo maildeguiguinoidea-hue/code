@@ -168,6 +168,18 @@ impl MinecraftAuthenticationError {
                 .is_ok_and(|response| response.error == "invalid_grant")
         )
     }
+
+    /// Whether this error means the service was unreachable or failing, as
+    /// opposed to rejecting the credentials.
+    fn is_service_unreachable(&self) -> bool {
+        match self {
+            Self::Request { source, .. } => reqwest_is_unreachable(source),
+            Self::DeserializeResponse { status_code, .. } => {
+                status_code.is_server_error()
+            }
+            _ => false,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -313,12 +325,66 @@ const ONLINE_PROFILE_LIVE_STATE_MAX_AGE: std::time::Duration =
     std::time::Duration::from_secs(5);
 const ONLINE_PROFILE_AUTH_ERROR_BACKOFF: std::time::Duration =
     std::time::Duration::from_secs(60);
-/// Offline username. Change this to whatever you want.
-const OFFLINE_USERNAME: &str = "solrac0707";
+/// Upper bound on how long a launch waits for a token refresh before falling
+/// back to the stored account. A refresh is five sequential requests, each
+/// retried by `auth_retry`, so on a black-holed network it can otherwise
+/// stall a launch for minutes.
+const LAUNCH_REFRESH_DEADLINE: std::time::Duration =
+    std::time::Duration::from_secs(8);
 
-/// Always-on offline mode: Some(..) means Microsoft auth is never used.
-fn offline_username() -> Option<String> {
-    Some(OFFLINE_USERNAME.to_string())
+/// How the credentials for the most recent launch were obtained.
+#[derive(Serialize, Debug, Clone)]
+#[serde(tag = "mode", rename_all = "snake_case")]
+pub enum LaunchAuthStatus {
+    /// No launch has resolved credentials yet this session.
+    Unknown,
+    /// Tokens were valid or refreshed successfully.
+    Online,
+    /// Auth servers were unreachable; launching with the stored account.
+    OfflineCached {
+        username: String,
+        uuid: Uuid,
+        since: DateTime<Utc>,
+    },
+}
+
+static LAUNCH_AUTH_STATUS: std::sync::RwLock<LaunchAuthStatus> =
+    std::sync::RwLock::new(LaunchAuthStatus::Unknown);
+
+pub fn launch_auth_status() -> LaunchAuthStatus {
+    LAUNCH_AUTH_STATUS
+        .read()
+        .map(|status| status.clone())
+        .unwrap_or(LaunchAuthStatus::Unknown)
+}
+
+pub fn is_launching_offline() -> bool {
+    matches!(launch_auth_status(), LaunchAuthStatus::OfflineCached { .. })
+}
+
+fn set_launch_auth_status(status: LaunchAuthStatus) {
+    if let Ok(mut current) = LAUNCH_AUTH_STATUS.write() {
+        *current = status;
+    }
+}
+
+/// Whether a refresh failure means the auth servers could not be reached,
+/// rather than that they rejected the credentials.
+fn is_auth_service_unreachable(err: &crate::Error) -> bool {
+    err.chain().any(|cause| {
+        if let Some(auth_error) =
+            cause.downcast_ref::<MinecraftAuthenticationError>()
+        {
+            return auth_error.is_service_unreachable();
+        }
+        cause
+            .downcast_ref::<reqwest::Error>()
+            .is_some_and(reqwest_is_unreachable)
+    })
+}
+
+fn reqwest_is_unreachable(err: &reqwest::Error) -> bool {
+    err.is_connect() || err.is_timeout() || err.is_request() || err.is_body()
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -342,30 +408,23 @@ impl OnlineProfileCacheIntent {
     }
 }
 
-
 impl Credentials {
-    /// Synthetic credentials so the launcher never needs a Microsoft session.
-    pub fn offline(username: String) -> Self {
-        let hash = sha2::Sha256::digest(
-            format!("OfflinePlayer:{username}").as_bytes(),
-        );
-        let mut bytes = [0u8; 16];
-        bytes.copy_from_slice(&hash[..16]);
-        bytes[6] = (bytes[6] & 0x0f) | 0x40;
-        bytes[8] = (bytes[8] & 0x3f) | 0x80;
-
-        Self {
-            offline_profile: MinecraftProfile {
-                id: Uuid::from_bytes(bytes),
-                name: username,
-                ..MinecraftProfile::default()
-            },
-            access_token: "0".to_string(),
-            refresh_token: String::new(),
-            // far future so refresh() bails early and never hits the network
-            expires: Utc::now() + Duration::days(365 * 100),
-            active: true,
-        }
+    /// Records that this stored account is being used without contacting
+    /// the auth servers.
+    pub(crate) fn mark_launching_offline(&self) {
+        let since = match launch_auth_status() {
+            LaunchAuthStatus::OfflineCached { uuid, since, .. }
+                if uuid == self.offline_profile.id =>
+            {
+                since
+            }
+            _ => Utc::now(),
+        };
+        set_launch_auth_status(LaunchAuthStatus::OfflineCached {
+            username: self.offline_profile.name.clone(),
+            uuid: self.offline_profile.id,
+            since,
+        });
     }
 
     /// Refreshes the authentication tokens for this user if they are expired, or
@@ -565,59 +624,81 @@ impl Credentials {
     }
 
     /// Like [`get_active`](Self::get_active), but enforces credentials to be
-    /// successfully refreshed unless the network is unreachable or times out.
+    /// successfully refreshed unless the auth servers are unreachable, in
+    /// which case the stored account is used as-is.
     #[tracing::instrument]
     pub async fn get_default_credential(
         exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<Option<Credentials>> {
-        if let Some(username) = offline_username() {
-            return Ok(Some(Credentials::offline(username)));
-        }
-        let credentials = Self::get_active(exec).await?;
+        // Not `get_active`: it refreshes too, which would make an offline
+        // launch wait on the network twice
+        let Some(mut creds) = Self::get_active_unrefreshed(exec).await? else {
+            return Ok(None);
+        };
 
-        if let Some(mut creds) = credentials {
-            let res = creds.refresh(exec).await;
-
-            match res {
-                Ok(_) => Ok(Some(creds)),
-                Err(err) => {
-                    let auth_error =
-                        err.downcast_ref::<MinecraftAuthenticationError>();
-
-                    if let Some(MinecraftAuthenticationError::Request {
-                        source,
-                        ..
-                    }) = auth_error
-                        && (source.is_connect() || source.is_timeout())
-                    {
-                        return Ok(Some(creds));
-                    }
-
-                    if auth_error.is_some_and(|error| error.is_invalid_grant())
-                    {
-                        Self::remove(creds.offline_profile.id, exec).await?;
-
-                        if let Some((_, mut user)) =
-                            Self::get_all(exec).await?.into_iter().next()
-                        {
-                            user.active = true;
-                            user.upsert(exec).await?;
-                        }
-
-                        return Ok(None);
-                    }
-
-                    Err(err)
-                }
+        let res = match tokio::time::timeout(
+            LAUNCH_REFRESH_DEADLINE,
+            creds.refresh(exec),
+        )
+        .await
+        {
+            Ok(res) => res,
+            Err(_elapsed) => {
+                tracing::warn!(
+                    "Token refresh exceeded {LAUNCH_REFRESH_DEADLINE:?}, launching with stored account"
+                );
+                creds.mark_launching_offline();
+                return Ok(Some(creds));
             }
-        } else {
-            Ok(None)
+        };
+
+        match res {
+            Ok(()) => {
+                set_launch_auth_status(LaunchAuthStatus::Online);
+                Ok(Some(creds))
+            }
+            Err(err) if is_auth_service_unreachable(&err) => {
+                tracing::warn!(
+                    "Auth servers unreachable, launching with stored account: {err}"
+                );
+                creds.mark_launching_offline();
+                Ok(Some(creds))
+            }
+            Err(err) => {
+                let auth_error =
+                    err.downcast_ref::<MinecraftAuthenticationError>();
+
+                if auth_error.is_some_and(|error| error.is_invalid_grant()) {
+                    Self::remove(creds.offline_profile.id, exec).await?;
+
+                    if let Some((_, mut user)) =
+                        Self::get_all(exec).await?.into_iter().next()
+                    {
+                        user.active = true;
+                        user.upsert(exec).await?;
+                    }
+
+                    return Ok(None);
+                }
+
+                Err(err)
+            }
         }
     }
 
     /// Fetches the currently selected credentials from the database, attempting
     /// to refresh them if they are expired.
     pub async fn get_active(
+        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
+    ) -> crate::Result<Option<Self>> {
+        let mut credentials = Self::get_active_unrefreshed(exec).await?;
+        if let Some(credentials) = &mut credentials {
+            credentials.refresh(exec).await.ok();
+        }
+        Ok(credentials)
+    }
+
+    async fn get_active_unrefreshed(
         exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<Option<Self>> {
         let res = sqlx::query!(
@@ -631,38 +712,25 @@ impl Credentials {
         .fetch_optional(exec)
         .await?;
 
-        Ok(match res {
-            Some(x) => {
-                let mut credentials = Self {
-                    offline_profile: MinecraftProfile {
-                        id: Uuid::parse_str(&x.uuid).unwrap_or_default(),
-                        name: x.username,
-                        ..MinecraftProfile::default()
-                    },
-                    access_token: x.access_token,
-                    refresh_token: x.refresh_token,
-                    expires: Utc
-                        .timestamp_opt(x.expires, 0)
-                        .single()
-                        .unwrap_or_else(Utc::now),
-                    active: x.active == 1,
-                };
-                credentials.refresh(exec).await.ok();
-                Some(credentials)
-            }
-            None => None,
-        })
+        Ok(res.map(|x| Self {
+            offline_profile: MinecraftProfile {
+                id: Uuid::parse_str(&x.uuid).unwrap_or_default(),
+                name: x.username,
+                ..MinecraftProfile::default()
+            },
+            access_token: x.access_token,
+            refresh_token: x.refresh_token,
+            expires: Utc
+                .timestamp_opt(x.expires, 0)
+                .single()
+                .unwrap_or_else(Utc::now),
+            active: x.active == 1,
+        }))
     }
 
     pub async fn get_all(
         exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
     ) -> crate::Result<DashMap<Uuid, Self>> {
-        if let Some(username) = offline_username() {
-            let creds = Credentials::offline(username);
-            let map = DashMap::new();
-            map.insert(creds.offline_profile.id, creds);
-            return Ok(map);
-        }
         let res = sqlx::query!(
             "
             SELECT

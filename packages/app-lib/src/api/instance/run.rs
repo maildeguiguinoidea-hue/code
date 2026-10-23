@@ -237,7 +237,8 @@ async fn run_credentials(
         mc_set_options.push(("fullscreen".to_string(), "true".to_string()));
     }
 
-    if let Some(project_id) = server_play_project_id(&context.link)
+    if !crate::state::is_launching_offline()
+        && let Some(project_id) = server_play_project_id(&context.link)
         && !project_id.trim().is_empty()
     {
         let server_id = uuid::Uuid::new_v4().to_string();
@@ -286,7 +287,13 @@ async fn run_credentials(
         }
     }
 
-    let _ = crate::minecraft_skins::flush_pending_skin_change().await;
+    if crate::state::is_launching_offline() {
+        info!("Launching offline, skipping pending skin change flush");
+    } else if let Err(err) =
+        crate::minecraft_skins::flush_pending_skin_change().await
+    {
+        warn!("Failed to flush pending skin change before launch: {err:?}");
+    }
     crate::launcher::launch_minecraft(
         &java_args,
         &launch_env_args,

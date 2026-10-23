@@ -14,6 +14,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             get_default_user,
             set_default_user,
             get_users,
+            get_launch_auth_status,
         ])
         .build()
 }
@@ -97,6 +98,11 @@ pub async fn get_default_user() -> Result<Option<uuid::Uuid>> {
 #[tauri::command]
 pub async fn set_default_user(user: uuid::Uuid) -> Result<()> {
     Ok(minecraft_auth::set_default_user(user).await?)
+}
+
+#[tauri::command]
+pub async fn get_launch_auth_status() -> Result<LaunchAuthStatus> {
+    Ok(minecraft_auth::launch_auth_status())
 }
 
 /// Get a copy of the list of all user credentials

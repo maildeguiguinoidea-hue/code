@@ -20,6 +20,12 @@ pub async fn check_reachable() -> crate::Result<()> {
     Ok(())
 }
 
+/// How the most recent launch authenticated: online, or offline with the
+/// stored account because the auth servers were unreachable.
+pub fn launch_auth_status() -> crate::state::LaunchAuthStatus {
+    crate::state::launch_auth_status()
+}
+
 #[tracing::instrument]
 pub async fn begin_login() -> crate::Result<MinecraftLoginFlow> {
     let state = State::get().await?;
