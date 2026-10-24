@@ -3,6 +3,7 @@ import { defineMessages, useScrollIndicator, useVIntl } from '@modrinth/ui'
 import { OverlayScrollbars } from 'overlayscrollbars'
 import { computed, onMounted, onScopeDispose, ref } from 'vue'
 
+import { useAppSettings } from '@/composables/use-app-settings'
 import { useTheme } from '@/composables/use-theme'
 import PrideFundraiserBanner from '@/features/campaigns/pride-fundraiser-banner.vue'
 import FriendsList from '@/features/friends/friends-list/index.vue'
@@ -30,8 +31,16 @@ const emit = defineEmits<{
 
 const { formatMessage } = useVIntl()
 const appTheme = useTheme()
-const { hasLoggedIntoMinecraft, hasLoggedIntoModrinth, showChecklist } = injectOnboardingChecklist()
-const showFriendsList = computed(() => !showChecklist.value || hasLoggedIntoModrinth.value)
+const appSettings = useAppSettings()
+const onboarding = injectOnboardingChecklist()
+const checklistEnabled = computed(() => appSettings.getFeatureFlag('getting_started_checklist'))
+const showChecklist = computed(() => checklistEnabled.value && onboarding.showChecklist.value)
+const showAccounts = computed(
+	() => !checklistEnabled.value || onboarding.hasLoggedIntoMinecraft.value,
+)
+const showFriendsList = computed(
+	() => !showChecklist.value || onboarding.hasLoggedIntoModrinth.value,
+)
 const accounts = ref<InstanceType<typeof AccountsCard> | null>(null)
 const friends = ref<InstanceType<typeof FriendsList> | null>(null)
 const scrollContainer = ref<HTMLElement | null>(null)
@@ -99,6 +108,7 @@ const messages = defineMessages({
 				data-overlayscrollbars-initialize
 			>
 				<OnboardingChecklist
+					v-if="checklistEnabled"
 					@create-instance="emit('create-instance')"
 					@login-minecraft="accounts?.login()"
 					@login-modrinth="emit('login-modrinth')"
@@ -106,7 +116,7 @@ const messages = defineMessages({
 				<div id="sidebar-teleport-target" class="sidebar-teleport-content contents"></div>
 				<div class="sidebar-default-content hidden" :class="{ 'sidebar-enabled': visible }">
 					<div
-						v-show="hasLoggedIntoMinecraft"
+						v-show="showAccounts"
 						class="p-4 border-0 border-b-[1px] border-[--brand-gradient-border] border-solid"
 					>
 						<h3 class="text-base text-primary font-medium m-0">

@@ -284,8 +284,7 @@ pub async fn login_finish(
 /// Creates a local guest account and makes it the active account.
 ///
 /// Guest accounts never contact any authentication server and launch in offline
-/// mode. They can only be created while a Microsoft account is stored, and their
-/// player UUID is derived from the name with the same scheme as the vanilla
+/// mode. Their player UUID is derived from the name with the same scheme as the vanilla
 /// server's offline mode, so local worlds see a consistent player.
 #[tracing::instrument]
 pub async fn create_guest_account(
@@ -293,14 +292,6 @@ pub async fn create_guest_account(
     exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
 ) -> crate::Result<Credentials> {
     validate_guest_username(username)?;
-
-    if !Credentials::has_microsoft_account(exec).await? {
-        return Err(ErrorKind::InputError(
-            "a signed-in Microsoft account is required to create guest accounts"
-                .to_string(),
-        )
-        .into());
-    }
 
     let uuid = offline_player_uuid(username);
     let uuid_string = uuid.as_hyphenated().to_string();
@@ -405,7 +396,6 @@ pub enum AccountType {
     #[default]
     Microsoft,
     /// A local guest profile without credentials, launched in offline mode.
-    /// Only usable while a Microsoft account is also stored.
     Guest,
 }
 
@@ -799,14 +789,6 @@ impl Credentials {
         };
 
         if creds.account_type == AccountType::Guest {
-            if !Self::has_microsoft_account(exec).await? {
-                return Err(ErrorKind::InputError(
-                    "guest accounts can only be used while a Microsoft account is signed in"
-                        .to_string(),
-                )
-                .into());
-            }
-
             set_launch_auth_status(LaunchAuthStatus::Guest {
                 username: creds.offline_profile.name.clone(),
                 uuid: creds.offline_profile.id,
@@ -992,21 +974,6 @@ impl Credentials {
             .await?;
 
         Ok(())
-    }
-
-    /// Whether a Microsoft account is stored, which guest accounts require.
-    pub async fn has_microsoft_account(
-        exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite>,
-    ) -> crate::Result<bool> {
-        let user_type = AccountType::Microsoft.as_db_str();
-        let count = sqlx::query_scalar!(
-            "SELECT COUNT(*) FROM minecraft_users WHERE user_type = $1",
-            user_type,
-        )
-        .fetch_one(exec)
-        .await?;
-
-        Ok(count > 0)
     }
 
     pub async fn remove(

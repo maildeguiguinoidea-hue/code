@@ -66,7 +66,7 @@ export async function users() {
 }
 
 /**
- * Creates a local guest account and selects it. Requires a stored Microsoft account.
+ * Creates a local guest account and selects it.
  * @param {string} username
  * @returns {Promise<Credential>}
  */

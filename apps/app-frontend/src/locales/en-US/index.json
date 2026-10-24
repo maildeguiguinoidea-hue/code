@@ -4550,6 +4550,9 @@
   "minecraft-account.active": {
     "message": "Active"
   },
+  "minecraft-account.add-account": {
+    "message": "Add Account"
+  },
   "minecraft-account.cancel": {
     "message": "Cancel"
   },
@@ -4560,19 +4563,16 @@
     "message": "Create guest"
   },
   "minecraft-account.create-local-guest": {
-    "message": "Create Account (Local Guest)"
+    "message": "Local Guest"
   },
   "minecraft-account.create-online": {
-    "message": "Create Account (Online)"
+    "message": "Online Account"
   },
   "minecraft-account.guest-name": {
     "message": "Guest name"
   },
   "minecraft-account.guest-name-placeholder": {
     "message": "Nickname"
-  },
-  "minecraft-account.guest-requires-microsoft": {
-    "message": "Sign in with a Microsoft account first to create local guest accounts."
   },
   "minecraft-account.invalid-guest-name": {
     "message": "Use 1 to 16 letters, digits or underscores."
@@ -4594,9 +4594,6 @@
   },
   "minecraft-account.select-account": {
     "message": "Select account"
-  },
-  "minecraft-account.sign-in": {
-    "message": "Sign in to Minecraft"
   },
   "minecraft-account.type.local-guest": {
     "message": "Local guest"

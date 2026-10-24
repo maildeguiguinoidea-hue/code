@@ -4,10 +4,9 @@
 		class="flex flex-col gap-3 bg-button-bg border border-solid border-surface-5 rounded-xl p-3 mt-2"
 	>
 		<span>{{ formatMessage(messages.notSignedIn) }}</span>
-		<Button type="colored" color="brand" :disabled="loginDisabled" @click="login()">
-			<LogInIcon v-if="!loginDisabled" />
-			<SpinnerIcon v-else class="animate-spin" />
-			{{ formatMessage(messages.signInToMinecraft) }}
+		<Button color="brand" @click="openOptions">
+			<UserPlusIcon />
+			{{ formatMessage(messages.addAccount) }}
 		</Button>
 	</div>
 	<Accordion
@@ -58,16 +57,6 @@
 							{{ account.profile.name }}
 						</p>
 					</button>
-					<IconButton
-						v-tooltip="formatMessage(messages.removeAccount)"
-						type="quiet"
-						color="red"
-						:label="formatMessage(messages.removeAccount)"
-						class="mr-2 !bg-button-bg !text-primary ![box-shadow:var(--shadow-button)] hover:!bg-red focus-visible:!bg-red hover:!text-[var(--color-accent-contrast)] focus-visible:!text-[var(--color-accent-contrast)]"
-						@click="logout(account.profile.id)"
-					>
-						<TrashIcon />
-					</IconButton>
 				</div>
 			</template>
 			<div class="flex flex-col gap-2 px-2 pt-2">
@@ -90,7 +79,7 @@
 		:header="formatMessage(messages.accountOptions)"
 		:on-hide="resetOptions"
 	>
-		<div class="flex flex-col gap-3 p-6">
+		<div v-if="accounts.length > 0" class="flex flex-col gap-3 p-6">
 			<span class="font-semibold text-contrast">{{ formatMessage(messages.yourAccounts) }}</span>
 			<div class="flex flex-col gap-2">
 				<div
@@ -165,6 +154,15 @@
 							>
 								<EditIcon />
 							</IconButton>
+							<IconButton
+								v-tooltip="formatMessage(messages.removeAccount)"
+								type="quiet"
+								color="red"
+								:label="formatMessage(messages.removeAccount)"
+								@click="logout(account.profile.id)"
+							>
+								<TrashIcon />
+							</IconButton>
 						</div>
 					</Transition>
 					<span v-if="renamingId === account.profile.id && renameError" class="text-xs text-red">
@@ -174,7 +172,7 @@
 			</div>
 		</div>
 
-		<div class="h-px bg-divider" />
+		<div v-if="accounts.length > 0" class="h-px bg-divider" />
 
 		<div class="flex flex-col gap-4 bg-surface-2 p-6">
 			<span class="font-semibold text-contrast">{{ formatMessage(messages.createAccount) }}</span>
@@ -187,16 +185,12 @@
 				<Button
 					class="w-full"
 					:aria-expanded="guestFormOpen"
-					:disabled="!hasMicrosoftAccount"
 					@click="guestFormOpen = !guestFormOpen"
 				>
 					<UserPlusIcon />
 					{{ formatMessage(messages.createLocalGuest) }}
 				</Button>
 			</div>
-			<p v-if="!hasMicrosoftAccount" class="m-0 text-sm text-secondary">
-				{{ formatMessage(messages.guestRequiresMicrosoft) }}
-			</p>
 			<Transition
 				enter-active-class="transition duration-150 ease-out"
 				enter-from-class="opacity-0 -translate-y-1"
@@ -204,7 +198,7 @@
 				leave-to-class="opacity-0"
 			>
 				<form
-					v-if="guestFormOpen && hasMicrosoftAccount"
+					v-if="guestFormOpen"
 					class="flex flex-col gap-2"
 					@submit.prevent="createGuest()"
 				>
@@ -418,8 +412,6 @@ const renamingId = ref<string | null>(null)
 const renameInput = ref('')
 const renameBusy = ref(false)
 
-const hasMicrosoftAccount = computed(() => accounts.value.some((account) => !isGuest(account)))
-
 function isGuest(account: MinecraftCredential) {
 	return account.account_type === 'guest'
 }
@@ -503,6 +495,10 @@ useAppEvent('process', async (e) => {
 })
 
 const messages = defineMessages({
+	addAccount: {
+		id: 'minecraft-account.add-account',
+		defaultMessage: 'Add Account',
+	},
 	notSignedIn: {
 		id: 'minecraft-account.not-signed-in',
 		defaultMessage: 'Not signed in',
@@ -545,15 +541,11 @@ const messages = defineMessages({
 	},
 	createOnline: {
 		id: 'minecraft-account.create-online',
-		defaultMessage: 'Create Account (Online)',
+		defaultMessage: 'Online Account',
 	},
 	createLocalGuest: {
 		id: 'minecraft-account.create-local-guest',
-		defaultMessage: 'Create Account (Local Guest)',
-	},
-	guestRequiresMicrosoft: {
-		id: 'minecraft-account.guest-requires-microsoft',
-		defaultMessage: 'Sign in with a Microsoft account first to create local guest accounts.',
+		defaultMessage: 'Local Guest',
 	},
 	guestName: {
 		id: 'minecraft-account.guest-name',
@@ -582,10 +574,6 @@ const messages = defineMessages({
 	minecraftAccount: {
 		id: 'minecraft-account.label',
 		defaultMessage: 'Minecraft account',
-	},
-	signInToMinecraft: {
-		id: 'minecraft-account.sign-in',
-		defaultMessage: 'Sign in to Minecraft',
 	},
 })
 </script>

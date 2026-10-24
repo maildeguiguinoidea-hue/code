@@ -1,6 +1,9 @@
 import { reactive, ref } from 'vue'
 
+import { CUSTOM_FEATURES } from '@/custom/features'
+
 export const DEFAULT_FEATURE_FLAGS = {
+	...CUSTOM_FEATURES,
 	project_background: false,
 	page_path: false,
 	server_project_qa: false,

@@ -4,6 +4,8 @@ import { defineMessages, IconButton, TextLogo, useVIntl } from '@modrinth/ui'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { useAppSettings } from '@/composables/use-app-settings'
+
 import AppActionBar from './action-bar.vue'
 import BombEasterEgg from './bomb-easter-egg.vue'
 import Breadcrumbs from './breadcrumbs.vue'
@@ -22,6 +24,7 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const appSettings = useAppSettings()
 const easterEgg = ref<InstanceType<typeof LogoEasterEgg> | null>(null)
 const { formatMessage } = useVIntl()
 const messages = defineMessages({
@@ -40,7 +43,7 @@ const messages = defineMessages({
 			<div class="shrink-0 cursor-pointer select-none" @dblclick.stop="easterEgg?.start()">
 				<TextLogo class="h-7 w-auto text-contrast pointer-events-none" />
 			</div>
-			<LogoEasterEgg ref="easterEgg" />
+			<LogoEasterEgg v-if="appSettings.getFeatureFlag('logo_easter_egg')" ref="easterEgg" />
 			<div data-tauri-drag-region class="ml-2 flex shrink-0 items-center gap-2">
 				<IconButton
 					type="outlined"
@@ -66,7 +69,7 @@ const messages = defineMessages({
 						:class="{ 'opacity-20': !canNavigateForward }"
 					/>
 				</IconButton>
-				<BombEasterEgg />
+				<BombEasterEgg v-if="appSettings.getFeatureFlag('bomb_easter_egg')" />
 			</div>
 			<Breadcrumbs />
 		</div>

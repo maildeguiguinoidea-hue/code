@@ -92,7 +92,7 @@ fn default_true() -> bool {
     true
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, Hash, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, Hash, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum FeatureFlag {
     PagePath,
@@ -105,6 +105,11 @@ pub enum FeatureFlag {
     ServerProjectQa,
     I18nDebug,
     LocalhostSignIn,
+    /// A flag only the frontend knows about, such as the fork's own switches in
+    /// `apps/app-frontend/src/custom/features.ts`. Without it, one unknown name
+    /// would make every saved flag fail to load.
+    #[serde(untagged)]
+    Custom(String),
 }
 
 impl Settings {
@@ -513,5 +518,29 @@ impl DefaultPage {
             "library" => Self::Library,
             _ => Self::Home,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FeatureFlag;
+    use std::collections::HashMap;
+
+    #[test]
+    fn unknown_feature_flags_survive_a_round_trip() {
+        let saved = r#"{"localhost_sign_in":true,"bomb_easter_egg":false}"#;
+        let flags: HashMap<FeatureFlag, bool> =
+            serde_json::from_str(saved).unwrap();
+
+        assert_eq!(flags.get(&FeatureFlag::LocalhostSignIn), Some(&true));
+        assert_eq!(
+            flags.get(&FeatureFlag::Custom("bomb_easter_egg".to_string())),
+            Some(&false)
+        );
+
+        let resaved: HashMap<FeatureFlag, bool> =
+            serde_json::from_str(&serde_json::to_string(&flags).unwrap())
+                .unwrap();
+        assert_eq!(resaved, flags);
     }
 }

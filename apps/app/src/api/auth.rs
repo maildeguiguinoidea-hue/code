@@ -107,7 +107,7 @@ pub async fn get_launch_auth_status() -> Result<LaunchAuthStatus> {
     Ok(minecraft_auth::launch_auth_status())
 }
 
-/// Create a local guest account, which requires a stored Microsoft account
+/// Create a local guest account and select it
 #[tauri::command]
 pub async fn create_local_guest_account(
     username: String,
