@@ -2531,9 +2531,6 @@
   "minecraft-account.select-account": {
     "message": "Zvolte účet"
   },
-  "minecraft-account.sign-in": {
-    "message": "Přihlásit se do Minecraftu"
-  },
   "minecraft-required.description-header": {
     "message": "Přihlaste se k účtu Microsoft"
   },

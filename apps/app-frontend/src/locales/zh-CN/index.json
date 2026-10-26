@@ -4427,9 +4427,6 @@
   "minecraft-account.select-account": {
     "message": "选择账户"
   },
-  "minecraft-account.sign-in": {
-    "message": "登录 Minecraft"
-  },
   "minecraft-required.description": {
     "message": "你需要先登录拥有 Minecraft 的 Microsoft 账户，然后才能启动游戏。"
   },

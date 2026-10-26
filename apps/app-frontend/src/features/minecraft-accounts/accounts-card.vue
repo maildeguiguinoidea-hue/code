@@ -203,11 +203,7 @@
 				leave-active-class="transition duration-100 ease-in"
 				leave-to-class="opacity-0"
 			>
-				<form
-					v-if="guestFormOpen"
-					class="flex flex-col gap-2"
-					@submit.prevent="createGuest()"
-				>
+				<form v-if="guestFormOpen" class="flex flex-col gap-2" @submit.prevent="createGuest()">
 					<label for="guest-account-name" class="text-sm font-medium text-contrast">
 						{{ formatMessage(messages.guestName) }}
 					</label>

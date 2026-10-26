@@ -3884,9 +3884,6 @@
   "minecraft-account.select-account": {
     "message": "Välj konto"
   },
-  "minecraft-account.sign-in": {
-    "message": "Logga in till Minecraft"
-  },
   "minecraft-required.description": {
     "message": "Du behöver ett Microsoft-konto som äger Minecraft innan du kan köra och spela."
   },

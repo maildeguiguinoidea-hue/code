@@ -1112,9 +1112,6 @@
   "minecraft-account.select-account": {
     "message": "Izaberi račun"
   },
-  "minecraft-account.sign-in": {
-    "message": "Prijavi se na Minecraft"
-  },
   "search.filter.locked.instance": {
     "message": "Obezbeđeno od instance"
   },

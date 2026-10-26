@@ -725,9 +725,6 @@
   "minecraft-account.select-account": {
     "message": "เลือกบัญชี"
   },
-  "minecraft-account.sign-in": {
-    "message": "ลงชื่อเข้าใช้ Minecraft"
-  },
   "search.filter.locked.instance": {
     "message": "โปรแกรมเป็นผู้กำหนด"
   },

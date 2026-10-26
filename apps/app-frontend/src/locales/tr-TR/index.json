@@ -3707,9 +3707,6 @@
   "minecraft-account.select-account": {
     "message": "Hesap seçin"
   },
-  "minecraft-account.sign-in": {
-    "message": "Minecraft'a giriş yapın"
-  },
   "minecraft-required.description": {
     "message": "Oyunu başlatmak ve oynamak için Minecraft'a sahip olan bir Microsoft hesabına ihtiyaç vardır."
   },

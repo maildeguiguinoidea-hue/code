@@ -4406,9 +4406,6 @@
   "minecraft-account.select-account": {
     "message": "계정 선택"
   },
-  "minecraft-account.sign-in": {
-    "message": "마인크래프트 계정으로 로그인"
-  },
   "minecraft-required.description": {
     "message": "게임을 실행하고 플레이하려면 마인크래프트를 보유한 Microsoft 계정이 필요합니다."
   },

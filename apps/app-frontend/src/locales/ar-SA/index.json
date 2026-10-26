@@ -2975,9 +2975,6 @@
   "minecraft-account.select-account": {
     "message": "اختيار الحساب"
   },
-  "minecraft-account.sign-in": {
-    "message": "سجل دخولك لـ ماينكرافت"
-  },
   "minecraft-required.description": {
     "message": "تحتاج إلى حساب مايكروسوفت يمتلك ماين كرافت قبل أن تتمكن من التشغيل واللعب."
   },

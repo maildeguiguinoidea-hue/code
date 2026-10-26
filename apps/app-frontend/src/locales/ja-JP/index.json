@@ -3518,9 +3518,6 @@
   "minecraft-account.select-account": {
     "message": "アカウントを選択"
   },
-  "minecraft-account.sign-in": {
-    "message": "Minecraftにサインイン"
-  },
   "minecraft-required.description": {
     "message": "Minecraftを起動してプレイするには、Minecraftを所有しているMicrosoftアカウントが必要です。"
   },

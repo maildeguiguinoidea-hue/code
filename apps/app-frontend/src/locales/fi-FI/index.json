@@ -1505,9 +1505,6 @@
   "minecraft-account.select-account": {
     "message": "Valitse tili"
   },
-  "minecraft-account.sign-in": {
-    "message": "Kirjaudu sisään Minecraftiin"
-  },
   "search.filter.locked.instance": {
     "message": "Annettu instanssin toimesta"
   },

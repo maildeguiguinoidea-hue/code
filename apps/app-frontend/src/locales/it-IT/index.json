@@ -4427,9 +4427,6 @@
   "minecraft-account.select-account": {
     "message": "Seleziona un account"
   },
-  "minecraft-account.sign-in": {
-    "message": "Accedi a Minecraft"
-  },
   "minecraft-required.description": {
     "message": "Devi disporre di una copia di Minecraft da un account Microsoft prima di poter giocare."
   },

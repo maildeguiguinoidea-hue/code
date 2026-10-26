@@ -4418,9 +4418,6 @@
   "minecraft-account.select-account": {
     "message": "Вибрати обліковий запис"
   },
-  "minecraft-account.sign-in": {
-    "message": "Увійти в Minecraft"
-  },
   "minecraft-required.description": {
     "message": "Ви повинні мати обліковий запис Microsoft із придбаним Minecraft, перш ніж запускати ігри."
   },

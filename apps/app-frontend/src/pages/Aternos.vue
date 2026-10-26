@@ -4,8 +4,6 @@ import { defineMessages, IconButton, injectNotificationManager, useVIntl } from 
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useAppSettings } from '@/composables/use-app-settings'
-import { useRootBreadcrumb } from '@/shared/breadcrumbs'
-
 import {
 	aternos_go_home,
 	aternos_hide,
@@ -14,6 +12,7 @@ import {
 	aternos_show,
 	type AternosPalette,
 } from '@/helpers/aternos'
+import { useRootBreadcrumb } from '@/shared/breadcrumbs'
 
 const { handleError } = injectNotificationManager()
 const { formatMessage } = useVIntl()
@@ -66,9 +65,10 @@ function readPalette(): AternosPalette {
 
 /** The app's background as red, green and blue, whatever format the theme writes it in */
 function readBackground(): [number, number, number] {
-	const [red = 0, green = 0, blue = 0] = getComputedStyle(document.body)
-		.backgroundColor.match(/\d+(\.\d+)?/g)
-		?.map(Number) ?? []
+	const [red = 0, green = 0, blue = 0] =
+		getComputedStyle(document.body)
+			.backgroundColor.match(/\d+(\.\d+)?/g)
+			?.map(Number) ?? []
 	return [red, green, blue]
 }
 

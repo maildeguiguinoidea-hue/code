@@ -4406,9 +4406,6 @@
   "minecraft-account.select-account": {
     "message": "Fiók kiválasztása"
   },
-  "minecraft-account.sign-in": {
-    "message": "Bejelentkezés a Minecraftba"
-  },
   "minecraft-required.description": {
     "message": "A játék indítása és használata előtt rendelkezned kell egy Microsoft-fiókkal, amelyhez Minecraft tartozik."
   },

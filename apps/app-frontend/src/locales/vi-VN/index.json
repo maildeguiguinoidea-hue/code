@@ -4427,9 +4427,6 @@
   "minecraft-account.select-account": {
     "message": "Chọn tài khoản"
   },
-  "minecraft-account.sign-in": {
-    "message": "Đăng nhập Minecraft"
-  },
   "minecraft-required.description": {
     "message": "Bạn cần tài khoản Microsoft sở hữu Minecraft trước khi có thể khởi chạy và chơi."
   },

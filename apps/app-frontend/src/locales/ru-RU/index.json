@@ -4403,9 +4403,6 @@
   "minecraft-account.select-account": {
     "message": "Выберите аккаунт"
   },
-  "minecraft-account.sign-in": {
-    "message": "Войти в Minecraft"
-  },
   "minecraft-required.description": {
     "message": "Для запуска и игры требуется аккаунт Microsoft с приобретённым Minecraft."
   },

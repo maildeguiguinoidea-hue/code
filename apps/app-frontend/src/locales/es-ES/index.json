@@ -4397,9 +4397,6 @@
   "minecraft-account.select-account": {
     "message": "Seleccionar cuenta"
   },
-  "minecraft-account.sign-in": {
-    "message": "Registrarse en Minecraft"
-  },
   "minecraft-required.description": {
     "message": "Necesitas una cuenta de Microsoft que posea Minecraft antes de poder lanzar y jugar."
   },

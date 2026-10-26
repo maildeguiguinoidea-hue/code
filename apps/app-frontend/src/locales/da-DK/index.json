@@ -1094,9 +1094,6 @@
   "minecraft-account.select-account": {
     "message": "Vælg konto"
   },
-  "minecraft-account.sign-in": {
-    "message": "Log ind på Minecraft"
-  },
   "minecraft-required.description-header": {
     "message": "Log ind med en Microsoft konto"
   },
