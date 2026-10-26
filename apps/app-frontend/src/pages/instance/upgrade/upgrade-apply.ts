@@ -1,5 +1,5 @@
-// Moves an instance to the version an UpgradeReport was made for: removes the mods that have no
-// version there, switches the instance's Minecraft + loader version, then updates every file.
+// Moves an instance to the version an UpgradeReport was made for: switches the instance's
+// Minecraft + loader version, updates every file, then disables the mods that have no version there.
 
 import type { CheckedItem, UpgradeReport } from './upgrade-check'
 import { displayName } from './upgrade-check'
@@ -16,7 +16,7 @@ interface LoaderManifest {
 
 export interface UpgradeActions {
 	loaderManifest(loader: string): Promise<LoaderManifest>
-	removeFile(path: string): Promise<void>
+	disableFile(path: string): Promise<void>
 	setVersion(gameVersion: string, loaderVersion: string | undefined): Promise<void>
 	switchFile(path: string, versionId: string): Promise<void>
 	installGame(): Promise<void>
@@ -34,7 +34,7 @@ export function errorText(e: unknown): string {
 }
 
 export interface UpgradeResult {
-	removed: string[]
+	disabled: string[]
 	updated: string[]
 	failed: { name: string; error: string }[]
 }
@@ -57,7 +57,7 @@ export function pickLoaderVersion(
 	return (loaders.find((l) => l.stable) ?? loaders[0])?.id
 }
 
-export function toRemove(report: UpgradeReport): CheckedItem[] {
+export function toDisable(report: UpgradeReport): CheckedItem[] {
 	return report.blocking
 }
 
@@ -70,7 +70,7 @@ export async function applyUpgrade(
 	actions: UpgradeActions,
 	onProgress: (message: string) => void = () => {},
 ): Promise<UpgradeResult> {
-	const result: UpgradeResult = { removed: [], updated: [], failed: [] }
+	const result: UpgradeResult = { disabled: [], updated: [], failed: [] }
 
 	let loaderVersion: string | undefined
 	if (report.loader !== 'vanilla') {
@@ -85,16 +85,6 @@ export async function applyUpgrade(
 		}
 	}
 
-	for (const item of toRemove(report)) {
-		onProgress(`Deleting ${displayName(item)}…`)
-		try {
-			await actions.removeFile(item.file.path)
-			result.removed.push(displayName(item))
-		} catch (e) {
-			result.failed.push({ name: displayName(item), error: errorText(e) })
-		}
-	}
-
 	onProgress(`Switching to ${report.gameVersion}…`)
 	await actions.setVersion(report.gameVersion, loaderVersion)
 
@@ -104,6 +94,16 @@ export async function applyUpgrade(
 		try {
 			await actions.switchFile(item.file.path, item.target!.id)
 			result.updated.push(displayName(item))
+		} catch (e) {
+			result.failed.push({ name: displayName(item), error: errorText(e) })
+		}
+	}
+
+	for (const item of toDisable(report)) {
+		onProgress(`Disabling ${displayName(item)}…`)
+		try {
+			await actions.disableFile(item.file.path)
+			result.disabled.push(displayName(item))
 		} catch (e) {
 			result.failed.push({ name: displayName(item), error: errorText(e) })
 		}

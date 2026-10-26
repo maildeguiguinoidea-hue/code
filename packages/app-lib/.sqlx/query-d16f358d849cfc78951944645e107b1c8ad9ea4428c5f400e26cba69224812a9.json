@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE minecraft_users\n        SET username = $1, uuid = $2\n        WHERE uuid = $3 AND user_type = $4\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "d16f358d849cfc78951944645e107b1c8ad9ea4428c5f400e26cba69224812a9"
+}

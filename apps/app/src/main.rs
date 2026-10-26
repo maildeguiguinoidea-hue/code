@@ -114,7 +114,22 @@ async fn set_restart_after_pending_update(
 
 // if Tauri app is called with arguments, then those arguments will be treated as commands
 // ie: deep links or filepaths for .mrpacks
+/// Makes WebKitGTK draw pages and 2D canvases on the CPU unless the user chose otherwise.
+/// With GPU drawing, its 2D canvases can scramble the graphics state of WebGL views on the
+/// same page, which turns the 3D skin previews into white shapes until the app restarts.
+#[cfg(target_os = "linux")]
+fn use_cpu_canvas_rendering() {
+    const VARIABLE: &str = "WEBKIT_SKIA_ENABLE_CPU_RENDERING";
+    if env::var_os(VARIABLE).is_none() {
+        // SAFETY: called first thing in main, before any other thread exists
+        unsafe { env::set_var(VARIABLE, "1") };
+    }
+}
+
 fn main() {
+    #[cfg(target_os = "linux")]
+    use_cpu_canvas_rendering();
+
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -192,7 +207,8 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_opener::init());
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init());
 
     #[cfg(target_os = "windows")]
     {
@@ -325,6 +341,7 @@ fn main() {
         .plugin(api::cache::init())
         .plugin(api::files::init())
         .plugin(api::ads::init())
+        .plugin(api::aternos::init())
         .plugin(api::friends::init())
         .plugin(api::worlds::init())
         .manage(PendingUpdateData::default())

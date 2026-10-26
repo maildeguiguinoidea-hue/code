@@ -1,25 +1,41 @@
 <script setup lang="ts">
 import { SearchIcon } from '@modrinth/assets'
-import { Button, Input, Toggle } from '@modrinth/ui'
+import { Button, Input, Toggle, useVIntl } from '@modrinth/ui'
 import Fuse from 'fuse.js'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
 	DEFAULT_FEATURE_FLAGS,
 	type FeatureFlag,
 	useAppSettings,
 } from '@/composables/use-app-settings.ts'
-import { get as getSettings, set as setSettings } from '@/helpers/settings.ts'
+import { CUSTOM_FEATURE_DESCRIPTIONS, featureFlagName } from '@/custom/feature-messages'
+import { CUSTOM_FEATURES } from '@/custom/features'
+
+import { useFeatureFlagSetter } from './use-feature-flag-setter'
 
 const appSettings = useAppSettings()
+const { formatMessage } = useVIntl()
+const setFeatureFlag = await useFeatureFlagSetter()
 
-const settings = ref(await getSettings())
 const searchQuery = ref('')
-const allFlags = computed(() => Object.keys(DEFAULT_FEATURE_FLAGS) as FeatureFlag[])
+
+function isCustom(flag: FeatureFlag): flag is keyof typeof CUSTOM_FEATURES {
+	return flag in CUSTOM_FEATURES
+}
+
+const allFlags = computed(() =>
+	(Object.keys(DEFAULT_FEATURE_FLAGS) as FeatureFlag[]).map((key) => ({
+		key,
+		title: featureFlagName(key),
+		description: isCustom(key) ? formatMessage(CUSTOM_FEATURE_DESCRIPTIONS[key]) : null,
+	})),
+)
 
 const fuse = computed(
 	() =>
 		new Fuse(allFlags.value, {
+			keys: ['title'],
 			threshold: 0.4,
 		}),
 )
@@ -31,21 +47,21 @@ const filteredFlags = computed(() => {
 	return fuse.value.search(searchQuery.value).map((result) => result.item)
 })
 
-function setFeatureFlag(key: FeatureFlag, value: boolean) {
-	appSettings.featureFlags[key] = value
-	settings.value.feature_flags[key] = value
-}
-
-watch(
-	settings,
-	async () => {
-		await setSettings(settings.value)
-	},
-	{ deep: true },
+const groups = computed(() =>
+	[
+		{
+			title: 'Added in this fork',
+			flags: filteredFlags.value.filter((flag) => isCustom(flag.key)),
+		},
+		{
+			title: 'Modrinth',
+			flags: filteredFlags.value.filter((flag) => !isCustom(flag.key)),
+		},
+	].filter((group) => group.flags.length > 0),
 )
 </script>
 <template>
-	<div class="flex flex-col gap-2.5">
+	<div class="flex flex-col gap-4">
 		<Input
 			v-model="searchQuery"
 			type="search"
@@ -53,27 +69,50 @@ watch(
 			placeholder="Search flags..."
 			wrapper-class="w-full"
 		/>
-		<div v-for="option in filteredFlags" :key="option" class="flex items-center justify-between">
-			<div>
-				<h2 class="m-0 text-lg font-semibold text-contrast capitalize">
-					{{ option.replaceAll('_', ' ') }}
+		<section
+			v-for="group in groups"
+			:key="group.title"
+			class="overflow-hidden rounded-2xl border border-solid border-divider"
+		>
+			<div
+				class="flex items-center gap-2 border-0 border-b border-solid border-divider bg-bg-raised px-4 py-3"
+			>
+				<h2 class="m-0 text-sm font-bold uppercase tracking-wider text-secondary">
+					{{ group.title }}
 				</h2>
+				<span class="rounded-full bg-button-bg px-2 text-xs font-semibold text-secondary">
+					{{ group.flags.length }}
+				</span>
 			</div>
-			<div class="flex items-center gap-2">
-				<Button
-					type="quiet"
-					:disabled="appSettings.getFeatureFlag(option) === DEFAULT_FEATURE_FLAGS[option]"
-					@click="setFeatureFlag(option, DEFAULT_FEATURE_FLAGS[option])"
+			<div class="flex flex-col gap-4 p-4">
+				<div
+					v-for="flag in group.flags"
+					:key="flag.key"
+					class="flex items-center justify-between gap-4"
 				>
-					Reset to default
-				</Button>
-				<Toggle
-					id="advanced-rendering"
-					:model-value="appSettings.getFeatureFlag(option)"
-					@update:model-value="() => setFeatureFlag(option, !appSettings.getFeatureFlag(option))"
-				/>
+					<div>
+						<h3 class="m-0 text-lg font-semibold text-contrast capitalize">
+							{{ flag.title }}
+						</h3>
+						<p v-if="flag.description" class="m-0 mt-1 text-secondary">{{ flag.description }}</p>
+					</div>
+					<div class="flex shrink-0 items-center gap-2">
+						<Button
+							type="quiet"
+							:disabled="appSettings.getFeatureFlag(flag.key) === DEFAULT_FEATURE_FLAGS[flag.key]"
+							@click="setFeatureFlag(flag.key, DEFAULT_FEATURE_FLAGS[flag.key])"
+						>
+							Reset to default
+						</Button>
+						<Toggle
+							:id="`feature-flag-${flag.key}`"
+							:model-value="appSettings.getFeatureFlag(flag.key)"
+							@update:model-value="setFeatureFlag(flag.key, !appSettings.getFeatureFlag(flag.key))"
+						/>
+					</div>
+				</div>
 			</div>
-		</div>
+		</section>
 		<p v-if="filteredFlags.length === 0" class="text-center text-secondary">
 			No flags found matching "{{ searchQuery }}"
 		</p>

@@ -120,7 +120,8 @@ export class SkinPreviewStorage {
 		})
 	}
 
-	async cleanupInvalidKeys(validKeys: Set<string>): Promise<number> {
+	/** Deletes every stored entry whose key `shouldDelete` accepts. */
+	async deleteKeys(shouldDelete: (key: string) => boolean): Promise<number> {
 		if (!this.db) await this.init()
 
 		const transaction = this.db!.transaction(['previews'], 'readwrite')
@@ -136,7 +137,7 @@ export class SkinPreviewStorage {
 				if (cursor) {
 					const key = cursor.primaryKey as string
 
-					if (!validKeys.has(key)) {
+					if (shouldDelete(key)) {
 						const deleteRequest = cursor.delete()
 						deleteRequest.onsuccess = () => {
 							deletedCount++

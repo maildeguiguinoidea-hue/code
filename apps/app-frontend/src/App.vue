@@ -10,6 +10,7 @@ import {
 	PlayIcon,
 	PlusIcon,
 	RefreshCwIcon,
+	ServerIcon,
 	ServerStackIcon,
 	SettingsIcon,
 	ShirtIcon,
@@ -565,6 +566,10 @@ const messages = defineMessages({
 	modrinthHosting: {
 		id: 'app.nav.modrinth-hosting',
 		defaultMessage: 'Modrinth Hosting',
+	},
+	aternos: {
+		id: 'app.nav.aternos',
+		defaultMessage: 'Aternos',
 	},
 	screenshots: {
 		id: 'app.nav.screenshots',
@@ -2057,6 +2062,9 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 			>
 				<ServerStackIcon />
 			</NavButton>
+			<NavButton v-tooltip.right="formatMessage(messages.aternos)" to="/aternos">
+				<ServerIcon />
+			</NavButton>
 			<suspense>
 				<QuickInstanceSwitcher>
 					<NavButton
@@ -2142,7 +2150,7 @@ provideAppUpdateDownloadProgress(appUpdateDownload)
 		<AppTitleBar
 			:can-navigate-back="canNavigateBack"
 			:can-navigate-forward="canNavigateForward"
-			:show-sidebar-toggle="!forceSidebar && appSettings.toggleSidebar"
+			:show-sidebar-toggle="!forceSidebar"
 			:sidebar-toggled="sidebarToggled"
 			@toggle-sidebar="sidebarToggled = !sidebarToggled"
 		/>

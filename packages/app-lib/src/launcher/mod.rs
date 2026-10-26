@@ -1184,6 +1184,12 @@ pub async fn launch_minecraft(
     }
     // Java options should be set in instance options (the existence of _JAVA_OPTIONS overwrites them)
     command.env_remove("_JAVA_OPTIONS");
+    for (var, value) in crate::util::platform::appimage_free_env() {
+        match value {
+            Some(value) => command.env(var, value),
+            None => command.env_remove(var),
+        };
+    }
 
     command.envs(env_args.iter().cloned());
 

@@ -194,6 +194,15 @@
   "app.appearance-settings.unknown-pack-warning.title": {
     "message": "Warn me before installing unknown modpacks"
   },
+  "app.aternos.reload": {
+    "message": "Reload"
+  },
+  "app.aternos.servers": {
+    "message": "Servers"
+  },
+  "app.aternos.title": {
+    "message": "Aternos"
+  },
   "app.auth-servers.unreachable.body": {
     "message": "Minecraft authentication servers may be down right now. Check your internet connection and try again later."
   },
@@ -301,6 +310,21 @@
   },
   "app.content.sync-resource-packs-disabled": {
     "message": "Turn on resource pack syncing in app settings first."
+  },
+  "app.custom-features.aternos-adblock.description": {
+    "message": "Block ads on the Aternos page and get past Aternos's ad blocker check."
+  },
+  "app.custom-features.aternos-hide-tips.description": {
+    "message": "Hide help articles, promotions and other tips on the Aternos page."
+  },
+  "app.custom-features.bomb-easter-egg.description": {
+    "message": "Show the bomb button next to the back and forward arrows."
+  },
+  "app.custom-features.getting-started-checklist.description": {
+    "message": "Show the getting started checklist in the sidebar."
+  },
+  "app.custom-features.logo-easter-egg.description": {
+    "message": "Double-click the Modrinth logo in the title bar for a surprise."
   },
   "app.debug-export.canceling": {
     "message": "Canceling export…"
@@ -881,6 +905,9 @@
   "app.instance.tab.share": {
     "message": "Share"
   },
+  "app.instance.tab.upgrade": {
+    "message": "Upgrade check"
+  },
   "app.instance.tab.worlds": {
     "message": "Worlds"
   },
@@ -1378,6 +1405,9 @@
   },
   "app.nav.add-account": {
     "message": "Add account"
+  },
+  "app.nav.aternos": {
+    "message": "Aternos"
   },
   "app.nav.create-new-instance": {
     "message": "Create new instance"
@@ -3128,6 +3158,9 @@
   "app.settings.tabs.behavior": {
     "message": "Behavior"
   },
+  "app.settings.tabs.extras": {
+    "message": "Extras"
+  },
   "app.settings.tabs.features": {
     "message": "Features"
   },
@@ -4588,6 +4621,9 @@
   },
   "minecraft-account.rename-account": {
     "message": "Rename account"
+  },
+  "minecraft-account.rename-warning": {
+    "message": "Renaming gives this guest a new player ID. Single player worlds keep your inventory, but your stats start over. On servers and LAN worlds you join as a new player, until you change the name back. The same name always has the same ID, even on another computer."
   },
   "minecraft-account.save": {
     "message": "Save"

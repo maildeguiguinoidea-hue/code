@@ -9,7 +9,12 @@ pub(super) async fn create_shortcut(
     launch_url: &Url,
     output_path: &Path,
 ) -> Result<()> {
-    let target_path = std::env::current_exe()?;
+    // Inside an AppImage the running file is in a temporary mount that
+    // changes every launch, so point the shortcut at the AppImage itself
+    let target_path = match std::env::var_os("APPIMAGE") {
+        Some(appimage) => std::path::PathBuf::from(appimage),
+        None => std::env::current_exe()?,
+    };
     tokio::fs::write(
         output_path,
         format!(

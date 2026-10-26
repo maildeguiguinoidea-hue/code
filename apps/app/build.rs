@@ -418,6 +418,21 @@ fn main() {
                     ),
             )
             .plugin(
+                "aternos",
+                InlinedPlugin::new()
+                    .commands(&[
+                        "aternos_show",
+                        "aternos_hide",
+                        "aternos_update_hold",
+                        "aternos_set_theme",
+                        "aternos_go_home",
+                        "aternos_reload",
+                    ])
+                    .default_permission(
+                        DefaultPermissionRule::AllowAllCommands,
+                    ),
+            )
+            .plugin(
                 "files",
                 InlinedPlugin::new()
                     .commands(&[

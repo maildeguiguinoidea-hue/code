@@ -120,7 +120,7 @@ pub async fn create_local_guest_account(
 pub async fn rename_local_account(
     id: uuid::Uuid,
     new_name: String,
-) -> Result<()> {
+) -> Result<uuid::Uuid> {
     Ok(minecraft_auth::rename_guest_account(id, &new_name).await?)
 }
 

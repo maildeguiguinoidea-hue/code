@@ -68,7 +68,7 @@ pub async fn create_guest_account(
 pub async fn rename_guest_account(
     uuid: uuid::Uuid,
     new_name: &str,
-) -> crate::Result<()> {
+) -> crate::Result<uuid::Uuid> {
     let state = State::get().await?;
     crate::state::rename_guest_account(uuid, new_name, &state.pool).await
 }

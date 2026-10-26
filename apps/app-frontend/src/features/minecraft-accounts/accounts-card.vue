@@ -168,6 +168,12 @@
 					<span v-if="renamingId === account.profile.id && renameError" class="text-xs text-red">
 						{{ renameError }}
 					</span>
+					<span
+						v-else-if="renamingId === account.profile.id && renameInput !== account.profile.name"
+						class="text-xs text-orange"
+					>
+						{{ formatMessage(messages.renameWarning) }}
+					</span>
 				</div>
 			</div>
 		</div>
@@ -526,6 +532,11 @@ const messages = defineMessages({
 	renameAccount: {
 		id: 'minecraft-account.rename-account',
 		defaultMessage: 'Rename account',
+	},
+	renameWarning: {
+		id: 'minecraft-account.rename-warning',
+		defaultMessage:
+			'Renaming gives this guest a new player ID. Single player worlds keep your inventory, but your stats start over. On servers and LAN worlds you join as a new player, until you change the name back. The same name always has the same ID, even on another computer.',
 	},
 	save: {
 		id: 'minecraft-account.save',

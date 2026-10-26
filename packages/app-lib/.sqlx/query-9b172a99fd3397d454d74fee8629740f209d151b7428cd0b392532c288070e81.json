@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT uuid FROM minecraft_users WHERE uuid = $1",
+  "query": "\n        SELECT uuid FROM minecraft_users\n        WHERE username = $1 COLLATE NOCASE AND uuid != $2\n        ",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,11 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
       false
     ]
   },
-  "hash": "3439040f1c8ea6c21d94662d3cbd35767d7194aef1f6bc3abed41c741b292200"
+  "hash": "9b172a99fd3397d454d74fee8629740f209d151b7428cd0b392532c288070e81"
 }

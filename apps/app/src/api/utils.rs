@@ -138,72 +138,30 @@ pub async fn open_path<R: Runtime>(app: tauri::AppHandle<R>, path: PathBuf) {
 
 /// Opens a file or folder in the user's default app.
 ///
-/// An AppImage passes its bundled libraries to every program it starts through
-/// `LD_LIBRARY_PATH`. That breaks the system's `gio`, so `xdg-open` falls back
-/// to the web browser. Inside an AppImage, the system's `xdg-open` is run
-/// without the AppImage's environment instead.
+/// Inside an AppImage, the system's `xdg-open` is run without the AppImage's
+/// environment, since that environment makes it fall back to the web browser.
 pub fn open_with_default_app<R: Runtime>(
     app: &tauri::AppHandle<R>,
     path: &Path,
 ) -> std::io::Result<()> {
-    #[cfg(target_os = "linux")]
-    if std::env::var_os("APPIMAGE").is_some()
-        && let Some(appdir) = std::env::var_os("APPDIR")
-    {
-        return open_outside_appimage(Path::new(&appdir), path);
+    let env_fixes = theseus::appimage_free_env();
+    if !env_fixes.is_empty() {
+        let mut command = std::process::Command::new("xdg-open");
+        command.arg(path);
+        for (var, value) in env_fixes {
+            match value {
+                Some(value) => command.env(var, value),
+                None => command.env_remove(var),
+            };
+        }
+        let mut child = command.spawn()?;
+        std::thread::spawn(move || child.wait());
+        return Ok(());
     }
 
     app.opener()
         .open_path(path.to_string_lossy(), None::<&str>)
         .map_err(|error| std::io::Error::other(error.to_string()))
-}
-
-#[cfg(target_os = "linux")]
-fn open_outside_appimage(appdir: &Path, path: &Path) -> std::io::Result<()> {
-    /// Set by the AppImage's GTK hook for the app alone
-    const APPIMAGE_ONLY_VARS: &[&str] = &[
-        "GDK_BACKEND",
-        "GDK_PIXBUF_MODULE_FILE",
-        "GIO_EXTRA_MODULES",
-        "GI_TYPELIB_PATH",
-        "GSETTINGS_SCHEMA_DIR",
-        "GTK_DATA_PREFIX",
-        "GTK_EXE_PREFIX",
-        "GTK_IM_MODULE_FILE",
-        "GTK_PATH",
-        "GTK_THEME",
-    ];
-    /// Path lists the AppImage prepends its own folders to
-    const PATH_LIST_VARS: &[&str] =
-        &["LD_LIBRARY_PATH", "PATH", "XDG_DATA_DIRS"];
-
-    let mut command = std::process::Command::new("xdg-open");
-    command.arg(path);
-    for var in APPIMAGE_ONLY_VARS {
-        command.env_remove(var);
-    }
-    for var in PATH_LIST_VARS {
-        let Some(value) = std::env::var_os(var) else {
-            continue;
-        };
-        let kept: Vec<PathBuf> = std::env::split_paths(&value)
-            .filter(|dir| {
-                !dir.as_os_str().is_empty() && !dir.starts_with(appdir)
-            })
-            .collect();
-        if kept.is_empty() {
-            command.env_remove(var);
-        } else {
-            command.env(
-                var,
-                std::env::join_paths(kept).map_err(std::io::Error::other)?,
-            );
-        }
-    }
-
-    let mut child = command.spawn()?;
-    std::thread::spawn(move || child.wait());
-    Ok(())
 }
 
 #[tauri::command]

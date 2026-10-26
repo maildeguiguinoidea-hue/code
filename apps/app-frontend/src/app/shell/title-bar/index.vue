@@ -72,6 +72,7 @@ const messages = defineMessages({
 				<BombEasterEgg v-if="appSettings.getFeatureFlag('bomb_easter_egg')" />
 			</div>
 			<Breadcrumbs />
+			<div id="title-bar-page-actions" data-tauri-drag-region class="flex shrink-0 items-center gap-2" />
 		</div>
 		<section data-tauri-drag-region class="flex shrink-0 ml-auto items-center">
 			<IconButton

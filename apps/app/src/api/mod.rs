@@ -26,6 +26,7 @@ pub mod ads;
 mod ads_occlusion_macos;
 #[cfg(windows)]
 mod ads_occlusion_windows;
+pub mod aternos;
 pub mod cache;
 pub mod files;
 pub mod friends;

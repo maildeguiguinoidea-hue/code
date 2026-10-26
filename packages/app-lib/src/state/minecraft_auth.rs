@@ -285,28 +285,17 @@ pub async fn login_finish(
 ///
 /// Guest accounts never contact any authentication server and launch in offline
 /// mode. Their player UUID is derived from the name with the same scheme as the vanilla
-/// server's offline mode, so local worlds see a consistent player.
+/// server's offline mode, so a name has the same player UUID on every computer.
 #[tracing::instrument]
 pub async fn create_guest_account(
     username: &str,
     exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
 ) -> crate::Result<Credentials> {
     validate_guest_username(username)?;
+    ensure_name_free(username, None, exec).await?;
 
     let uuid = offline_player_uuid(username);
-    let uuid_string = uuid.as_hyphenated().to_string();
-    let existing = sqlx::query_scalar!(
-        "SELECT uuid FROM minecraft_users WHERE uuid = $1",
-        uuid_string,
-    )
-    .fetch_optional(exec)
-    .await?;
-    if existing.is_some() {
-        return Err(ErrorKind::InputError(format!(
-            "an account for player {username} already exists"
-        ))
-        .into());
-    }
+    ensure_uuid_free(uuid, username, exec).await?;
 
     let credentials = Credentials {
         offline_profile: MinecraftProfile {
@@ -327,26 +316,35 @@ pub async fn create_guest_account(
     Ok(credentials)
 }
 
-/// Changes the display name of a local guest account. The player UUID is kept,
-/// so the guest keeps its player data in existing worlds.
+/// Renames a local guest account and gives it the player UUID of the new name, so
+/// the name and UUID always match. Servers keep player data under the old UUID, so
+/// the guest joins them as a new player. Returns the new UUID.
 #[tracing::instrument]
 pub async fn rename_guest_account(
     uuid: Uuid,
     new_name: &str,
     exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
-) -> crate::Result<()> {
+) -> crate::Result<Uuid> {
     validate_guest_username(new_name)?;
+    ensure_name_free(new_name, Some(uuid), exec).await?;
 
-    let uuid = uuid.as_hyphenated().to_string();
+    let new_uuid = offline_player_uuid(new_name);
+    if new_uuid != uuid {
+        ensure_uuid_free(new_uuid, new_name, exec).await?;
+    }
+
+    let old_uuid = uuid.as_hyphenated().to_string();
+    let new_uuid_string = new_uuid.as_hyphenated().to_string();
     let user_type = AccountType::Guest.as_db_str();
     let result = sqlx::query!(
         "
         UPDATE minecraft_users
-        SET username = $1
-        WHERE uuid = $2 AND user_type = $3
+        SET username = $1, uuid = $2
+        WHERE uuid = $3 AND user_type = $4
         ",
         new_name,
-        uuid,
+        new_uuid_string,
+        old_uuid,
         user_type,
     )
     .execute(exec)
@@ -354,12 +352,67 @@ pub async fn rename_guest_account(
 
     if result.rows_affected() == 0 {
         return Err(ErrorKind::InputError(format!(
-            "no guest account with ID {uuid}"
+            "no guest account with ID {old_uuid}"
         ))
         .into());
     }
 
-    Ok(())
+    Ok(new_uuid)
+}
+
+/// Fails if another account already has the player UUID of `username`. Only guests
+/// renamed before UUIDs followed names can hold one, and renaming them fixes it.
+async fn ensure_uuid_free(
+    uuid: Uuid,
+    username: &str,
+    exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
+) -> crate::Result<()> {
+    let uuid = uuid.as_hyphenated().to_string();
+    let holder = sqlx::query_scalar!(
+        "SELECT username FROM minecraft_users WHERE uuid = $1",
+        uuid,
+    )
+    .fetch_optional(exec)
+    .await?;
+
+    match holder {
+        Some(holder) => Err(ErrorKind::InputError(format!(
+            "the account {holder} still uses the player ID of {username}; rename it first"
+        ))
+        .into()),
+        None => Ok(()),
+    }
+}
+
+/// Fails if an account other than `except` already uses `username`, ignoring case.
+async fn ensure_name_free(
+    username: &str,
+    except: Option<Uuid>,
+    exec: impl sqlx::Executor<'_, Database = sqlx::Sqlite> + Copy,
+) -> crate::Result<()> {
+    let except = except
+        .map(|uuid| uuid.as_hyphenated().to_string())
+        .unwrap_or_default();
+    let taken = sqlx::query_scalar!(
+        "
+        SELECT uuid FROM minecraft_users
+        WHERE username = $1 COLLATE NOCASE AND uuid != $2
+        ",
+        username,
+        except,
+    )
+    .fetch_optional(exec)
+    .await?
+    .is_some();
+
+    if taken {
+        Err(ErrorKind::InputError(format!(
+            "an account named {username} already exists"
+        ))
+        .into())
+    } else {
+        Ok(())
+    }
 }
 
 fn validate_guest_username(username: &str) -> crate::Result<()> {

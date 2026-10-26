@@ -13,8 +13,11 @@ const previews = new Map<string, PreviewEntry>()
 let renderQueue: Promise<unknown> = Promise.resolve()
 let pendingRenders = 0
 
+/** Bumped to redraw every stored preview, such as after a bad render was saved. */
+const PREVIEW_KEY_VERSION = 'v6'
+
 export function getSkinPreviewKey(skin: Skin): string {
-	return `ears-2-fixed-uvs+${skin.texture_key}+${skin.variant}+${skin.cape_id ?? 'no-cape'}`
+	return `${PREVIEW_KEY_VERSION}+${skin.texture_key}+${skin.variant}+${skin.cape_id ?? 'no-cape'}`
 }
 
 export function acquireSkinPreview(skin: Skin, capes: Cape[]) {
@@ -68,9 +71,17 @@ export function acquireSkinPreview(skin: Skin, capes: Cape[]) {
 	}
 }
 
-export async function cleanupUnusedPreviews(skins: Skin[]): Promise<void> {
+/**
+ * Deletes the stored previews of `removedSkins` and those from older preview versions. Previews
+ * of skins saved on other accounts are kept, so switching accounts never forces a redraw.
+ */
+export async function cleanupUnusedPreviews(removedSkins: Skin[]): Promise<void> {
+	const removedPreviews = new Set(removedSkins.map(getSkinPreviewKey))
+	const removedHeads = new Set(removedSkins.map((skin) => `${skin.texture_key}-head`))
 	await Promise.all([
-		skinPreviewStorage.cleanupInvalidKeys(new Set(skins.map(getSkinPreviewKey))),
-		headStorage.cleanupInvalidKeys(new Set(skins.map((skin) => `${skin.texture_key}-head`))),
+		skinPreviewStorage.deleteKeys(
+			(key) => removedPreviews.has(key) || !key.startsWith(`${PREVIEW_KEY_VERSION}+`),
+		),
+		headStorage.deleteKeys((key) => removedHeads.has(key)),
 	])
 }

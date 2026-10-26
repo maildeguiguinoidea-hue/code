@@ -14,6 +14,11 @@ export default new createRouter({
 			},
 		},
 		{
+			path: '/aternos',
+			name: 'Aternos',
+			component: () => import('@/pages/Aternos.vue'),
+		},
+		{
 			path: '/hosting/manage/',
 			name: 'Servers',
 			component: () => import('@/pages/Servers.vue'),

@@ -11,6 +11,7 @@ import {
 	PaintbrushIcon,
 	RefreshCwIcon,
 	Settings2Icon,
+	SparklesIcon,
 	ToggleRightIcon,
 	UserIcon,
 	WindowIcon,
@@ -38,6 +39,7 @@ import ProfileSettings from '@/features/settings/account/profile-settings.vue'
 import SocialSettings from '@/features/settings/account/social-settings.vue'
 import AppearanceSettings from '@/features/settings/display/appearance-settings.vue'
 import BehaviorSettings from '@/features/settings/display/behavior-settings.vue'
+import ExtrasSettings from '@/features/settings/display/extras-settings.vue'
 import FeatureFlagSettings from '@/features/settings/display/feature-flag-settings.vue'
 import FeaturesSettings from '@/features/settings/display/features-settings.vue'
 import LanguageSettings from '@/features/settings/display/language-settings.vue'
@@ -104,6 +106,15 @@ const tabs = [
 		category: tabCategories.display,
 		icon: LightBulbIcon,
 		content: FeaturesSettings,
+	},
+	{
+		name: defineMessage({
+			id: 'app.settings.tabs.extras',
+			defaultMessage: 'Extras',
+		}),
+		category: tabCategories.display,
+		icon: SparklesIcon,
+		content: ExtrasSettings,
 	},
 	{
 		name: defineMessage({

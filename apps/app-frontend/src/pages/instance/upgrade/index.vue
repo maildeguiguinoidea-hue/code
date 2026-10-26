@@ -48,9 +48,9 @@
 			<div>
 				<b>Upgraded from {{ upgradeResult.from }} to {{ upgradeResult.to }}</b>
 				<div class="text-secondary">
-					{{ upgradeResult.updated.length }} updated · {{ upgradeResult.removed.length }} deleted
-					<template v-if="upgradeResult.removed.length">
-						({{ upgradeResult.removed.join(', ') }})
+					{{ upgradeResult.updated.length }} updated · {{ upgradeResult.disabled.length }} disabled
+					<template v-if="upgradeResult.disabled.length">
+						({{ upgradeResult.disabled.join(', ') }})
 					</template>
 				</div>
 				<div v-for="fail in upgradeResult.failed" :key="fail.name" class="text-secondary">
@@ -122,9 +122,8 @@
 				</Button>
 				<span class="text-secondary">
 					<template v-if="report.blocking.length">
-						Deletes the {{ report.blocking.length }}
-						{{ report.blocking.length === 1 ? 'mod' : 'mods' }} that aren't updated, then updates
-						everything else.
+						Updates everything, then disables the {{ report.blocking.length }}
+						{{ report.blocking.length === 1 ? 'mod' : 'mods' }} that aren't updated yet.
 					</template>
 					<template v-else>Switches the version and updates all your mods.</template>
 				</span>
@@ -144,7 +143,9 @@
 								? 'This mod gets'
 								: `These ${report.blocking.length} mods get`
 						}}
-						<b class="text-red">deleted</b>:
+						<b class="text-orange">disabled</b>, you can turn
+						{{ report.blocking.length === 1 ? 'it' : 'them' }} back on from the Content tab once
+						{{ report.blocking.length === 1 ? 'it gets' : 'they get' }} updated:
 					</p>
 					<ul class="m-0 mt-1">
 						<li v-for="item in report.blocking" :key="item.file.path">{{ displayName(item) }}</li>
@@ -174,7 +175,7 @@
 					<Button type="outlined" @click="confirming = false">Cancel</Button>
 					<Button type="colored" color="red" @click="startUpgrade">
 						<template v-if="report.blocking.length">
-							Delete {{ report.blocking.length }}
+							Disable {{ report.blocking.length }}
 							{{ report.blocking.length === 1 ? 'mod' : 'mods' }} and upgrade
 						</template>
 						<template v-else>Upgrade to {{ report.gameVersion }}</template>
@@ -297,8 +298,8 @@ import { install_existing_instance } from '@/helpers/install'
 import {
 	edit,
 	get_projects,
-	remove_project,
 	switch_project_version_with_dependencies,
+	toggle_disable_project,
 } from '@/helpers/instance'
 import { get_loader_versions } from '@/helpers/metadata'
 import { get_game_versions } from '@/helpers/tags.js'
@@ -483,7 +484,9 @@ function startUpgrade() {
 			checked,
 			{
 				loaderManifest: (loader) => get_loader_versions(loader === 'neoforge' ? 'neo' : loader),
-				removeFile: (path) => remove_project(id, path),
+				disableFile: async (path) => {
+					await toggle_disable_project(id, path, false)
+				},
 				setVersion: (gameVersion, loaderVersion) =>
 					edit(id, {
 						game_version: gameVersion,

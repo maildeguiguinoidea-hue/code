@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
+import { aternos_update_hold } from '@/helpers/aternos'
+
 export async function init_ads_window(overrideShown = false) {
 	return await invoke('plugin:ads|init_ads_window', {
 		overrideShown,
@@ -13,10 +15,13 @@ async function update_ads_window_hold(acquire) {
 	adsWindowHoldUpdate = adsWindowHoldUpdate
 		.catch(() => {})
 		.then(() =>
-			invoke('plugin:ads|update_ads_window_hold', {
-				acquire,
-				dpr: window.devicePixelRatio,
-			}),
+			Promise.all([
+				invoke('plugin:ads|update_ads_window_hold', {
+					acquire,
+					dpr: window.devicePixelRatio,
+				}),
+				aternos_update_hold(acquire),
+			]),
 		)
 
 	return await adsWindowHoldUpdate

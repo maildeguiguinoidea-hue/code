@@ -192,6 +192,7 @@ const messages = defineMessages({
 	filesTab: { id: 'app.instance.tab.files', defaultMessage: 'Files' },
 	screenshotsTab: { id: 'app.instance.tab.screenshots', defaultMessage: 'Screenshots' },
 	worldsTab: { id: 'app.instance.tab.worlds', defaultMessage: 'Worlds' },
+	upgradeTab: { id: 'app.instance.tab.upgrade', defaultMessage: 'Upgrade check' },
 	logsTab: { id: 'app.instance.tab.logs', defaultMessage: 'Logs' },
 	shareTab: { id: 'app.instance.tab.share', defaultMessage: 'Share' },
 	shortcutCreated: {
@@ -546,7 +547,7 @@ const tabs = computed(() => {
 
 	if (instance.value?.loader !== 'vanilla') {
 		instanceTabs.push({
-			label: 'Upgrade check',
+			label: formatMessage(messages.upgradeTab),
 			href: `${basePath.value}/upgrade`,
 			icon: ArrowBigUpDashIcon,
 		})
