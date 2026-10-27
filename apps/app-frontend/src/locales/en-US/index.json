@@ -1484,6 +1484,30 @@
   "app.project.load-error": {
     "message": "Project data could not be loaded."
   },
+  "app.project.mods.count": {
+    "message": "{count, plural, one {# item} other {# items}}"
+  },
+  "app.project.mods.empty-description": {
+    "message": "Modrinth has no list of files for this version of the modpack."
+  },
+  "app.project.mods.empty-heading": {
+    "message": "No contents listed"
+  },
+  "app.project.mods.load-error": {
+    "message": "The modpack contents could not be loaded."
+  },
+  "app.project.mods.no-results": {
+    "message": "Nothing matches your search."
+  },
+  "app.project.mods.not-on-modrinth": {
+    "message": "Not on Modrinth"
+  },
+  "app.project.mods.pack-version": {
+    "message": "Pack version"
+  },
+  "app.project.mods.search": {
+    "message": "Search contents"
+  },
   "app.project.more-options": {
     "message": "More options"
   },
@@ -1492,6 +1516,9 @@
   },
   "app.project.tab.gallery": {
     "message": "Gallery"
+  },
+  "app.project.tab.mods": {
+    "message": "Mods"
   },
   "app.project.tab.versions": {
     "message": "Versions"

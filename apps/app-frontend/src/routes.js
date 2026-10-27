@@ -112,6 +112,11 @@ export default new createRouter({
 					name: 'Gallery',
 					component: () => import('@/pages/project/Gallery.vue'),
 				},
+				{
+					path: 'mods',
+					name: 'ProjectMods',
+					component: () => import('@/pages/project/Mods.vue'),
+				},
 			],
 		},
 		{

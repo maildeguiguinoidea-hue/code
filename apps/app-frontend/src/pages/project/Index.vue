@@ -184,6 +184,11 @@
 							shown: projectV3?.minecraft_server == null,
 						},
 						{
+							label: formatMessage(messages.modsTab),
+							href: projectModsHref,
+							shown: data.project_type === 'modpack' && projectV3?.minecraft_server == null,
+						},
+						{
 							label: formatMessage(messages.galleryTab),
 							href: projectGalleryHref,
 							shown: data.gallery.length > 0,
@@ -351,6 +356,7 @@ const messages = defineMessages({
 	descriptionTab: { id: 'app.project.tab.description', defaultMessage: 'Description' },
 	versionsTab: { id: 'app.project.tab.versions', defaultMessage: 'Versions' },
 	galleryTab: { id: 'app.project.tab.gallery', defaultMessage: 'Gallery' },
+	modsTab: { id: 'app.project.tab.mods', defaultMessage: 'Mods' },
 	loadError: {
 		id: 'app.project.load-error',
 		defaultMessage: 'Project data could not be loaded.',
@@ -487,6 +493,7 @@ const versionsHref = computed(() =>
 	buildProjectHref(`/project/${route.params.id}/versions`, instanceFilters.value),
 )
 const projectGalleryHref = computed(() => buildProjectHref(`/project/${route.params.id}/gallery`))
+const projectModsHref = computed(() => buildProjectHref(`/project/${route.params.id}/mods`))
 
 const projectBrowseBackUrl = computed(() => {
 	const browsePath = route.query.b
