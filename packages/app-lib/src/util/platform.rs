@@ -63,7 +63,11 @@ pub fn classpath_separator(java_arch: &str) -> &'static str {
 /// An AppImage passes its bundled libraries to every program it starts through
 /// `LD_LIBRARY_PATH` and related variables. Programs that open files or folders
 /// with the system's `xdg-open`, such as the game's "Open Pack Folder" button,
-/// then fail to load `gio` and fall back to the web browser.
+/// then fail to load `gio` and fall back to the web browser. Others, like a
+/// `PYTHONHOME` pointing into the AppImage, crash the file manager outright.
+///
+/// Any variable whose value points inside the AppImage is cleaned: path lists
+/// keep only their entries from outside it, and other values are removed.
 ///
 /// Each entry is a variable and its new value, where `None` means remove it.
 /// Outside an AppImage this returns nothing.
@@ -86,10 +90,6 @@ pub fn appimage_free_env()
             "GTK_PATH",
             "GTK_THEME",
         ];
-        /// Path lists the AppImage prepends its own folders to
-        const PATH_LIST_VARS: &[&str] =
-            &["LD_LIBRARY_PATH", "PATH", "XDG_DATA_DIRS"];
-
         if std::env::var_os("APPIMAGE").is_none() {
             return Vec::new();
         }
@@ -102,10 +102,13 @@ pub fn appimage_free_env()
             .iter()
             .map(|var| ((*var).into(), None))
             .collect();
-        for var in PATH_LIST_VARS {
-            let Some(value) = std::env::var_os(var) else {
+        for (var, value) in std::env::vars_os() {
+            if APPIMAGE_ONLY_VARS.iter().any(|only| var == *only)
+                || !std::env::split_paths(&value)
+                    .any(|dir| dir.starts_with(appdir))
+            {
                 continue;
-            };
+            }
             let kept: Vec<PathBuf> = std::env::split_paths(&value)
                 .filter(|dir| {
                     !dir.as_os_str().is_empty() && !dir.starts_with(appdir)
@@ -116,7 +119,7 @@ pub fn appimage_free_env()
             } else {
                 std::env::join_paths(kept).ok()
             };
-            changes.push(((*var).into(), new_value));
+            changes.push((var, new_value));
         }
         changes
     }
