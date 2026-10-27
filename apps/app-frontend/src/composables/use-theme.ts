@@ -1,8 +1,16 @@
 import { prepareThemeColorTransition } from '@modrinth/ui'
 import { computed, reactive, ref, watch } from 'vue'
 
-export const THEME_OPTIONS = ['dark', 'light', 'oled', 'purple', 'retro', 'system'] as const
-export const DARK_THEMES = ['dark', 'oled', 'purple', 'retro'] as const
+export const THEME_OPTIONS = [
+	'dark',
+	'light',
+	'oled',
+	'purple',
+	'christmas',
+	'retro',
+	'system',
+] as const
+export const DARK_THEMES = ['dark', 'oled', 'purple', 'christmas', 'retro'] as const
 
 export type ColorTheme = (typeof THEME_OPTIONS)[number]
 export type DarkTheme = (typeof DARK_THEMES)[number]

@@ -4,7 +4,9 @@ import { defineMessages, IconButton, TextLogo, useVIntl } from '@modrinth/ui'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import santaHat from '@/assets/christmas/santa-hat.svg?url'
 import { useAppSettings } from '@/composables/use-app-settings'
+import { useTheme } from '@/composables/use-theme'
 
 import AppActionBar from './action-bar.vue'
 import BombEasterEgg from './bomb-easter-egg.vue'
@@ -25,6 +27,7 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const appSettings = useAppSettings()
+const theme = useTheme()
 const easterEgg = ref<InstanceType<typeof LogoEasterEgg> | null>(null)
 const { formatMessage } = useVIntl()
 const messages = defineMessages({
@@ -40,8 +43,15 @@ const messages = defineMessages({
 		class="app-title-bar relative z-[2] flex bg-bg-raised pl-1 [grid-area:status] [.mac-traffic-lights_&]:pl-20"
 	>
 		<div data-tauri-drag-region class="flex min-w-0 flex-1 items-center overflow-hidden p-2">
-			<div class="shrink-0 cursor-pointer select-none" @dblclick.stop="easterEgg?.start()">
+			<div class="relative shrink-0 cursor-pointer select-none" @dblclick.stop="easterEgg?.start()">
 				<TextLogo class="h-7 w-auto text-contrast pointer-events-none" />
+				<img
+					v-if="theme.active === 'christmas'"
+					:src="santaHat"
+					alt=""
+					aria-hidden="true"
+					class="pointer-events-none absolute -left-1 -top-[7px] h-[18px] w-6 -rotate-[18deg] [image-rendering:pixelated]"
+				/>
 			</div>
 			<LogoEasterEgg v-if="appSettings.getFeatureFlag('logo_easter_egg')" ref="easterEgg" />
 			<div data-tauri-drag-region class="ml-2 flex shrink-0 items-center gap-2">

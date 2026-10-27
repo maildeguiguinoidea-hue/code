@@ -6242,6 +6242,9 @@
   "settings.display.sidebar.right-aligned-filters-sidebar.title": {
     "defaultMessage": "Right-aligned filters sidebar on search pages"
   },
+  "settings.display.theme.christmas": {
+    "defaultMessage": "Christmas"
+  },
   "settings.display.theme.dark": {
     "defaultMessage": "Dark"
   },
@@ -6261,7 +6264,7 @@
     "defaultMessage": "Preferred light theme"
   },
   "settings.display.theme.purple": {
-    "defaultMessage": "Purple Drip"
+    "defaultMessage": "Purple"
   },
   "settings.display.theme.retro": {
     "defaultMessage": "Retro"

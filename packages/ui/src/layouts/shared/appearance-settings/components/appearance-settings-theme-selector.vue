@@ -36,7 +36,11 @@ const themeLabels = defineMessages({
 	},
 	purple: {
 		id: 'settings.display.theme.purple',
-		defaultMessage: 'Purple Drip',
+		defaultMessage: 'Purple',
+	},
+	christmas: {
+		id: 'settings.display.theme.christmas',
+		defaultMessage: 'Christmas',
 	},
 	retro: {
 		id: 'settings.display.theme.retro',
@@ -134,23 +138,38 @@ function getPreviewClass(option: T): string {
 
 		&.purple-mode {
 			@extend .purple-mode;
+		}
+
+		&.christmas-mode {
+			@extend .christmas-mode;
 			position: relative;
 			overflow: hidden;
-			background: linear-gradient(160deg, #1a0b2e 0%, #0b0613 100%);
+			image-rendering: pixelated;
+			background:
+				url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 5' width='5' height='5' shape-rendering='crispEdges'%3E%3Crect x='2' y='0' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='0' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='3' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23ffffff'/%3E%3C/svg%3E")
+					18% 55% / 10px 10px no-repeat,
+				url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 7' width='7' height='7' shape-rendering='crispEdges'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='0' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='6' y='0' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='5' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='2' width='3' height='1' fill='%23ffffff'/%3E%3Crect x='0' y='3' width='3' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='4' y='3' width='3' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='4' width='3' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='5' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='0' y='6' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%23ffffff'/%3E%3C/svg%3E")
+					62% 40% / 14px 14px no-repeat,
+				url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 5 5' width='5' height='5' shape-rendering='crispEdges'%3E%3Crect x='2' y='0' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='3' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='0' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='3' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23cfe8ff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23ffffff'/%3E%3C/svg%3E")
+					86% 72% / 10px 10px no-repeat,
+				linear-gradient(160deg, #13261b 0%, #08110c 100%);
 
-			&::before {
+			/* pixel garland across the top and a strip of snow along the bottom */
+			&::before,
+			&::after {
 				content: '';
 				position: absolute;
 				inset: 0 0 auto;
-				height: 1.6rem;
-				background: linear-gradient(#c77dff, #7b1fd1);
-				/* a top band plus round blobs hanging under it = paint drips */
-				mask:
-					linear-gradient(#000 0 55%, transparent 55%),
-					radial-gradient(circle at 12% 70%, #000 0.45rem, transparent 0.5rem),
-					radial-gradient(circle at 38% 65%, #000 0.35rem, transparent 0.4rem),
-					radial-gradient(circle at 70% 75%, #000 0.55rem, transparent 0.6rem),
-					radial-gradient(circle at 90% 62%, #000 0.3rem, transparent 0.35rem);
+				height: 16px;
+				background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 8' width='16' height='8' shape-rendering='crispEdges'%3E%3Crect x='2' y='0' width='1' height='1' fill='%234caf50'/%3E%3Crect x='5' y='0' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='9' y='0' width='1' height='1' fill='%234caf50'/%3E%3Crect x='13' y='0' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%234caf50'/%3E%3Crect x='2' y='1' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='5' y='1' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='7' y='1' width='1' height='1' fill='%234caf50'/%3E%3Crect x='9' y='1' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='12' y='1' width='1' height='1' fill='%234caf50'/%3E%3Crect x='13' y='1' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='0' y='2' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%237bd67f'/%3E%3Crect x='2' y='2' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%234caf50'/%3E%3Crect x='5' y='2' width='4' height='1' fill='%232e7d32'/%3E%3Crect x='9' y='2' width='1' height='1' fill='%237bd67f'/%3E%3Crect x='10' y='2' width='3' height='1' fill='%232e7d32'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%234caf50'/%3E%3Crect x='14' y='2' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='0' y='3' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='3' y='3' width='3' height='1' fill='%232e7d32'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%237bd67f'/%3E%3Crect x='7' y='3' width='3' height='1' fill='%232e7d32'/%3E%3Crect x='10' y='3' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='11' y='3' width='3' height='1' fill='%232e7d32'/%3E%3Crect x='14' y='3' width='1' height='1' fill='%237bd67f'/%3E%3Crect x='15' y='3' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='0' y='4' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='1' y='4' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='4' y='4' width='3' height='1' fill='%232e7d32'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='8' y='4' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='9' y='4' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='10' y='4' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='12' y='4' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='13' y='4' width='2' height='1' fill='%232e7d32'/%3E%3Crect x='15' y='4' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='0' y='5' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='1' y='5' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='7' y='5' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='8' y='5' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='10' y='5' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='11' y='5' width='2' height='1' fill='%231f5a2a'/%3E%3Crect x='13' y='5' width='1' height='1' fill='%232e7d32'/%3E%3Crect x='14' y='5' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='15' y='5' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='1' y='6' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='8' y='6' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='11' y='6' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='12' y='6' width='1' height='1' fill='%231f5a2a'/%3E%3Crect x='13' y='6' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='15' y='6' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='2' y='7' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='5' y='7' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='9' y='7' width='1' height='1' fill='%23123d1b'/%3E%3Crect x='12' y='7' width='1' height='1' fill='%23123d1b'/%3E%3C/svg%3E")
+					repeat-x 0 0 / 32px 16px;
+			}
+
+			&::after {
+				inset: auto 0 0;
+				height: 12px;
+				background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 6' width='16' height='6' shape-rendering='crispEdges'%3E%3Crect x='4' y='0' width='3' height='1' fill='%23ffffff'/%3E%3Crect x='12' y='0' width='2' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='1' width='7' height='1' fill='%23ffffff'/%3E%3Crect x='11' y='1' width='4' height='1' fill='%23ffffff'/%3E%3Crect x='0' y='2' width='4' height='1' fill='%23ffffff'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='5' y='2' width='8' height='1' fill='%23ffffff'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='14' y='2' width='2' height='1' fill='%23ffffff'/%3E%3Crect x='0' y='3' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='1' y='3' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='2' y='3' width='5' height='1' fill='%23ffffff'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='8' y='3' width='3' height='1' fill='%23ffffff'/%3E%3Crect x='11' y='3' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='12' y='3' width='4' height='1' fill='%23ffffff'/%3E%3Crect x='0' y='4' width='2' height='1' fill='%23dbeeff'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='4' width='2' height='1' fill='%23dbeeff'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='6' y='4' width='3' height='1' fill='%23dbeeff'/%3E%3Crect x='9' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='10' y='4' width='2' height='1' fill='%23dbeeff'/%3E%3Crect x='12' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='13' y='4' width='3' height='1' fill='%23dbeeff'/%3E%3Crect x='0' y='5' width='2' height='1' fill='%23a9c9e8'/%3E%3Crect x='2' y='5' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='3' y='5' width='2' height='1' fill='%23a9c9e8'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='6' y='5' width='3' height='1' fill='%23a9c9e8'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='10' y='5' width='2' height='1' fill='%23a9c9e8'/%3E%3Crect x='12' y='5' width='1' height='1' fill='%23dbeeff'/%3E%3Crect x='13' y='5' width='3' height='1' fill='%23a9c9e8'/%3E%3C/svg%3E")
+					repeat-x 0 0 / 32px 12px;
 			}
 		}
 	}
