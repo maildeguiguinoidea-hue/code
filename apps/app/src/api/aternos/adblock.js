@@ -1,6 +1,6 @@
 // Blocks Aternos's ads and anti-adblock scripts, hides the overlay, and makes
 // Start/Download work. Ported from the "Aternos – all-in-one fix" userscript
-// (jc.aternos.fix v2.0), with Violentmonkey's GM_* calls swapped for plain
+// (jc.aternos.fix v2.0) plus the "master" v5.1 additions, with Violentmonkey's GM_* calls swapped for plain
 // page APIs. Runs before the page's own scripts.
 ;(() => {
 	const log = (...a) => console.log('[aternos-fix]', ...a)
@@ -27,6 +27,9 @@
 		/outbrain\.com/i,
 		/admiral/i,
 		/getadmiral/i,
+		/castlereach\.com/i,
+		/anonymised\.io/i,
+		/geoedge\.be/i,
 	]
 	const BLOCK_TEXT = [
 		/\(\(\)=>\{\}\)\.constructor\(/, // the while(true) freeze script
@@ -67,7 +70,9 @@
 		span:has(> div[style*="z-index: 10991"]),
 		div[style*="position: fixed"][style*="#F62451"],
 		.display.leaderboard, .display.skyscraper, .display.rectangle, .ad-replacement,
-		.promo-carousel-wrapper, .instream
+		.promo-carousel-wrapper, .instream,
+		.exaroton-header-leaderboard, .exaroton-ad, .exaroton-billboard, .exaroton-video,
+		.exaroton-skyscraper, [id^="adngin-"]
 		{ display: none !important; }`
 	function addStyle() {
 		const parent = document.head || document.documentElement
@@ -79,6 +84,28 @@
 		const waitForRoot = new MutationObserver(() => addStyle() && waitForRoot.disconnect())
 		waitForRoot.observe(document, { childList: true })
 	}
+
+	/** Boxes left with nothing in them once their ad is hidden: hide them too (never the page frame). */
+	function hideEmptyAdBoxes() {
+		const ads = document.querySelectorAll(
+			'.exaroton-header-leaderboard, .exaroton-ad, .exaroton-billboard, .exaroton-video, .exaroton-skyscraper, [id^="adngin-"]',
+		)
+		for (const ad of ads) {
+			let box = ad.parentElement
+			while (
+				box &&
+				box !== document.body &&
+				!box.matches('header, main, aside, nav, section, .body, .page-content') &&
+				box.innerText.trim() === '' &&
+				!box.querySelector('input, button, a[href]:not([href="#"])')
+			) {
+				box.style.setProperty('display', 'none', 'important')
+				box = box.parentElement
+			}
+		}
+	}
+	document.addEventListener('DOMContentLoaded', hideEmptyAdBoxes)
+	window.addEventListener('load', hideEmptyAdBoxes)
 
 	// The "hidden variable" Start/Download check. Known values, one per Aternos
 	// build, are set right away.
@@ -193,21 +220,59 @@
 		return found
 	}
 
-	function scanGates() {
-		const urls = [
-			...document.querySelectorAll('script[src*="assets.aternos.org/assets/panel/js/"]'),
-		].map((s) => s.src)
-		for (const url of urls) {
-			nativeFetch(url)
-				.then((r) => r.text())
-				.then((code) => {
-					for (const [k, v] of Object.entries(extractGates(code))) {
-						window[k] = v
-						log('set', k, 'from', url.split('/').pop())
-					}
-				})
-				.catch((e) => log('gate scan failed', e))
+	/** Shown when Aternos has gated code but the check couldn't be read: the fix needs updating. */
+	function warn(text) {
+		const box = document.createElement('div')
+		box.textContent = '[aternos-fix] ' + text + ' (click to close)'
+		box.style.cssText =
+			'position:fixed;top:12px;right:12px;z-index:2147483647;max-width:420px;padding:10px 14px;' +
+			'background:#F62451;color:#fff;font:600 14px/1.4 sans-serif;border-radius:8px;cursor:pointer;box-shadow:0 4px 16px #0008'
+		box.onclick = () => box.remove()
+		document.body.appendChild(box)
+	}
+
+	/** Reads every Aternos script on the page (any folder, plus inline ones), not a fixed path. */
+	async function scanGates() {
+		const urls = [...document.querySelectorAll('script[src]')]
+			.map((s) => s.src)
+			.filter((u) => {
+				try {
+					return /(^|\.)aternos\.org$/.test(new URL(u).hostname)
+				} catch {
+					return false
+				}
+			})
+		const fetched = await Promise.all(
+			urls.map((u) =>
+				nativeFetch(u)
+					.then((r) => r.text())
+					.catch(() => '')
+					.then((code) => [u.split('/').pop(), code]),
+			),
+		)
+		const inline = [...document.scripts]
+			.filter((s) => !s.src)
+			.map((s, i) => ['inline#' + i, s.textContent])
+		let set = 0
+		const gated = [],
+			empty = []
+		for (const [name, code] of [...fetched, ...inline]) {
+			if (!code && !name.startsWith('inline')) empty.push(name)
+			if (/async (start|download|save)\(\)\{(var \w+;)?if\(/.test(code)) gated.push(name)
+			try {
+				for (const [k, v] of Object.entries(extractGates(code))) {
+					window[k] = v
+					set++
+					log('set', k, 'from', name)
+				}
+			} catch (e) {
+				log('parse error in', name, e)
+			}
 		}
+		if (gated.length && !set)
+			warn(
+				`Start/Download check not found on ${location.pathname} (gated: ${gated.join(', ')}; empty: ${empty.join(', ') || 'none'}).`,
+			)
 	}
 
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scanGates)
